@@ -49,7 +49,11 @@ public class Products {
     
     @Column(nullable = false)
     private Boolean isActive = true;
-
+    
+   @Column(precision = 3, scale = 2)
+    @DecimalMin(value = "0.0", message = "Rating cannot be negative")
+    @DecimalMax(value = "5.0", message = "Rating cannot exceed 5.0")
+    private BigDecimal rating = BigDecimal.ZERO;
     
     @Column(name = "rating_count")
     @Min(value = 0, message = "Rating count cannot be negative")

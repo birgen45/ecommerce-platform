@@ -1488,6 +1488,8 @@
 <!-- Modal Overlay -->
 <div class="product-modal-overlay" id="productModalOverlay" onclick="closeProductModal()"></div>
     <script>
+
+
         // Category filtering functions
 let allProducts = [];
 let currentCategory = 'all';
@@ -1650,7 +1652,7 @@ window.addToCart = async function(productName, price, imageUrl) {
     try {
         console.log('Adding to cart:', productName, price);
         
-        const response = await fetch('/api/cart/add', {
+        const response = await fetch('http://localhost:8080/api/cart/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1660,13 +1662,15 @@ window.addToCart = async function(productName, price, imageUrl) {
                 quantity: 1,
                 sessionId: getOrCreateSessionId()
             })
-          
         });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
         const result = await response.json();
         
         if (result.success) {
-            // Update cart count from backend response
             cartCount = result.data.totalItems;
             updateCartDisplay();
             showCartSuccess(productName);
@@ -1678,22 +1682,12 @@ window.addToCart = async function(productName, price, imageUrl) {
         
     } catch (error) {
         console.error('Error adding to cart:', error);
-        // Fallback to local storage if backend is down
-        const newItem = {
-            id: Date.now() + Math.random(),
-            name: productName,
-            price: price,
-            image: imageUrl || '',
-            quantity: 1,
-            timestamp: new Date()
-        };
-        cartItems.push(newItem);
-        cartCount++;
-        updateCartDisplay();
-        showCartSuccess(productName);
-        alert('Added to local cart (backend unavailable)');
-        }  
-        };
+        alert('Failed to add item to cart. Please try again.');
+    }
+};
+          
+        
+   
 
         function updateCartDisplay() {
             try {
@@ -1883,7 +1877,7 @@ function getProductIdByName(productName) {
             }
         } catch (error) {
             console.error('Error clearing cart:', error);
-            // Fallback to local clear
+           
             cartCount = 0;
             cartItems = [];
             updateCartDisplay();
@@ -1904,87 +1898,125 @@ function getProductIdByName(productName) {
             return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
         };
 
-        function proceedToCheckout() {
-    if (cartItems.length === 0) {
-        alert('Your cart is empty!');
-        return;
-    }
-    
-    
-    const total = cartItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
-    
-    
-    const payButton = document.querySelector('.intaSendPayButton');
-    payButton.dataset.amount = total.toString();
-    payButton.innerHTML = `Pay now - KSh ${total.toLocaleString()}`;
-    
-    
-    if (confirm(`Proceed with payment of KSh ${total.toLocaleString()}?`)) {
-        
-        alert('Redirecting to IntaSend payment gateway...');
-        console.log('Processing payment:', total);
-        
-        // After successful payment clear cart
-        // clearCart();
-    }
+         function proceedToCheckout() {
+    if (cartItems.length === 0) {
+        alert('Your cart is empty!');
+        return;
+    }
+    
+    
+    const total = cartItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
+    
+    
+    const payButton = document.querySelector('.intaSendPayButton');
+    payButton.dataset.amount = total.toString();
+    payButton.innerHTML = `Pay now - KSh ${total.toLocaleString()}`;
+    
+    
+    if (confirm(`Proceed with payment of KSh ${total.toLocaleString()}?`)) {
+        
+        alert('Redirecting to IntaSend payment gateway...');
+        console.log('Processing payment:', total);
+        
+        // After successful payment clear cart
+        // clearCart();
+    }
 }
-        window.viewCart = function() {
-            console.log(' Cart Contents:', cartItems);
-            console.log(' Total Items:', cartCount);
-            console.log(' Total Value: KSh', getCartTotal().toLocaleString());
-            return cartItems;
-        };
+        window.viewCart = function() {
+            console.log(' Cart Contents:', cartItems);
+            console.log(' Total Items:', cartCount);
+            console.log(' Total Value: KSh', getCartTotal().toLocaleString());
+            return cartItems;
+        };
 
-        
-        function handleImageError(img) {
-            img.style.display = 'none';
-            img.parentElement.innerHTML = '<div class="placeholder"></div>';
-        }
-        
-         async function loadCartFromBackend() {
+        
+        function handleImageError(img) {
+            img.style.display = 'none';
+            img.parentElement.innerHTML = '<div class="placeholder"></div>';
+        }
+        
+         async function loadCartFromBackend() {
+    try {
+        
+        const sessionId = getOrCreateSessionId();
+        
+        console.log('Loading cart for session:', sessionId);
+        //makes request to the end point
+        const response = await fetch(`/api/cart/${sessionId}`);
+        console.log('Cart API response status:', response.status);
+        
+        const result = await response.json();
+        console.log('Cart API response:', result);
+        
+        if (result.success && result.data) {
+            // Clear existing cart items
+            cartItems = [];
+            
+            // Process cart items from B.E
+            if (result.data.cartItems && result.data.cartItems.length > 0) {
+                cartItems = result.data.cartItems.map(item => {
+                    return {
+                        id: item.id,
+                        name: item.product.name,
+                        price: item.product.price,
+                        quantity: item.quantity,
+                        image: item.product.imageUrl || '',
+                        subtotal: item.subtotal || (item.product.price * item.quantity)
+                    };
+                });
+            }
+            
+            cartCount = result.data.totalItems || 0;
+            
+            console.log('Processed cart items:', cartItems);
+            console.log('Cart count:', cartCount);
+            
+            return true;
+        } else {
+            console.error('Backend error or no data:', result);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error loading cart from backend:', error);
+        return false;
+    }
+}
+
+async function processPayment(orderId, amount) {
     try {
+        const paymentData = {
+            orderId: orderId,
+            paymentMethod: "CREDIT_CARD", // or get from user selection
+            // Add other payment details as needed
+        };
         
-        const sessionId = getOrCreateSessionId();
+        console.log('Processing payment:', paymentData);
         
-        console.log('Loading cart for session:', sessionId);
-        //makes request to the end point
-        const response = await fetch(`/api/cart/${sessionId}`);
-        console.log('Cart API response status:', response.status);
+        const response = await fetch('http://localhost:8080/api/checkout/payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(paymentData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Payment failed: ${response.status}`);
+        }
         
         const result = await response.json();
-        console.log('Cart API response:', result);
         
-        if (result.success && result.data) {
-            // Clear existing cart items
-            cartItems = [];
-            
-            // Process cart items from B.E
-            if (result.data.cartItems && result.data.cartItems.length > 0) {
-                cartItems = result.data.cartItems.map(item => {
-                    return {
-                        id: item.id,
-                        name: item.product.name,
-                        price: item.product.price,
-                        quantity: item.quantity,
-                        image: item.product.imageUrl || '',
-                        subtotal: item.subtotal || (item.product.price * item.quantity)
-                    };
-                });
-            }
-            
-            cartCount = result.data.totalItems || 0;
-            
-            console.log('Processed cart items:', cartItems);
-            console.log('Cart count:', cartCount);
-            
-            return true;
+        if (result.success) {
+            alert('Payment successful! Order confirmed.');
+            await clearCart(); // Clear cart after successful payment
+            closeCart();
         } else {
-            console.error('Backend error or no data:', result);
-            return false;
+            alert('Payment failed: ' + result.message);
         }
+        
     } catch (error) {
-        console.error('Error loading cart from backend:', error);
-        return false;
+        console.error('Payment error:', error);
+        alert('Payment failed. Please try again.');
     }
 }
    async function removeCartItem(cartItemId) {
@@ -2009,13 +2041,13 @@ function getProductIdByName(productName) {
         console.error('Error removing cart item:', error);
     }
 }
-// Newsletter subscription function
+//  subscription function
 function subscribeNewsletter() {
     const emailInput = document.getElementById('newsletterEmail');
     const successMessage = document.getElementById('newsletterSuccess');
     const email = emailInput.value.trim();
 
-    // Basic email validation
+    //  email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     if (!email) {
@@ -2041,7 +2073,7 @@ function subscribeNewsletter() {
     
 }
 
-// Allow Enter key to submit newsletter
+
 document.addEventListener('DOMContentLoaded', function() {
     const emailInput = document.getElementById('newsletterEmail');
     if (emailInput) {
