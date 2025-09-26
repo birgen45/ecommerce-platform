@@ -1,13 +1,19 @@
 package com.example.ecommerce;
 
+import java.util.HashMap;
+
 import jakarta.validation.Valid;//Validating objects passed in the request body
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;//loging messages and errors
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;//used to build http response allowing one to set OK 200
 import org.springframework.web.bind.annotation.*;//brings all core annota,,,, for creating rest controllers below
 
 import java.util.List;
+import java.util.Map;
+
+import org.springframework.web.reactive.function.client.WebClient;
 
 
 @RestController //handle  web request and returndata 
@@ -341,4 +347,74 @@ class CategoryController {
                     .body(ApiResponse.error("Failed to delete category"));
         }
     }
+}
+@RestController
+@RequestMapping("/api/orders")
+@RequiredArgsConstructor
+@Slf4j
+@CrossOrigin(origins = "*", allowedHeaders = "*")
+class OrderController {
+    
+    @PostMapping("/confirm")
+    public ResponseEntity<ApiResponse<String>> confirmOrder(@RequestBody OrderConfirmationRequest request) {
+        try {
+            log.info("Confirming order: {}", request.getApi_ref());
+            return ResponseEntity.ok(ApiResponse.success("Order confirmed successfully", "Order saved"));
+        } catch (Exception e) {
+            log.error("Error confirming order", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to confirm order"));
+        }
+    }
+
+   @PostMapping("/checkout")
+public ResponseEntity<ApiResponse<Map<String, Object>>> createCheckout(@RequestBody CheckoutRequest request) {
+    try {
+        log.info("Creating IntaSend checkout for amount: {}", request.getAmount());
+        
+        // checkout data for IntaSend
+        Map<String, Object> checkoutData = new HashMap<>();
+        checkoutData.put("first_name", request.getFirst_name());
+        checkoutData.put("last_name", request.getLast_name());
+        checkoutData.put("email", request.getEmail());
+        checkoutData.put("phone_number", request.getPhone_number());
+        checkoutData.put("amount", request.getAmount());
+        checkoutData.put("currency", "KES");
+        checkoutData.put("api_ref", request.getApi_ref());
+        checkoutData.put("redirect_url", request.getRedirect_url());
+        checkoutData.put("comment", request.getComment());
+        
+        
+        WebClient webClient = WebClient.create();
+        
+        Map<String, Object> intasendResponse = webClient.post()
+            .uri("https://api.intasend.com/api/v1/checkout/")
+            .header("X-IntaSend-Public-API-Key", "ISPubKey_test_f8ae9370-dee6-42f8-a090-f7e4fbf6c383")
+            .header("Content-Type", "application/json")
+            .bodyValue(checkoutData)
+            .retrieve()
+            .onStatus(
+                status -> status.isError(),
+                clientResponse -> clientResponse.bodyToMono(String.class)
+                    .map(error -> new RuntimeException("IntaSend API error: " + error))
+            )
+            .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+            .block();
+        
+        // Extract the checkout URL from IntaSend response
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("url", intasendResponse.get("url"));
+        responseData.put("id", intasendResponse.get("id"));
+        responseData.put("signature", intasendResponse.get("signature"));
+        
+        log.info("Checkout created successfully. URL: {}", responseData.get("url"));
+        
+        return ResponseEntity.ok(ApiResponse.success("Checkout created successfully", responseData));
+        
+    } catch (Exception e) {
+        log.error("Error creating checkout: {}", e.getMessage(), e);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Failed to create checkout: " + e.getMessage()));
+    }
+  }
 }

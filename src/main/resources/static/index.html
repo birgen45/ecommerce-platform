@@ -1468,7 +1468,8 @@
             </div>
             <div class="cart-actions">
                 <button class="clear-cart-btn" onclick="clearCart()">Clear Cart</button>
-                <button class="checkout-btn" onclick="proceedToCheckout()">Checkout</button>
+               <button class="checkout-btn" onclick="proceedToCheckout()">Checkout</button>
+
                 <button class="intaSendPayButton" data-amount="10" data-currency="KES">Pay now</button>
             </div>
         </div>
@@ -1489,12 +1490,10 @@
 <div class="product-modal-overlay" id="productModalOverlay" onclick="closeProductModal()"></div>
     <script>
 
-
-        // Category filtering functions
 let allProducts = [];
 let currentCategory = 'all';
 
-// Initialize products data when DOM loads
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeProducts();
     updateCartDisplay();
@@ -1502,7 +1501,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeProducts() {
-    // Get all product cards and store their data
+    
     const productCards = document.querySelectorAll('.product-card');
     allProducts = Array.from(productCards).map(card => {
         const name = card.querySelector('.product-name').textContent;
@@ -1525,7 +1524,8 @@ function getCategoryFromProductName(productName) {
         'Apple Watch Series 9': 'Electronics',
         'Canon EOS R6': 'Electronics',
         'Nike Air Max 270': 'Fashion',
-        'The Legend Book': 'Books'
+        'The Legend Book': 'Books',
+        'ps':'Gaming'
     };
     return categoryMap[productName] || 'Electronics';
 }
@@ -1539,7 +1539,7 @@ function filterByCategory(category) {
     });
     event.target.classList.add('active');
     
-    // Filter products
+  
     let visibleCount = 0;
     allProducts.forEach(product => {
         if (product.category === category) {
@@ -1556,7 +1556,7 @@ function filterByCategory(category) {
     const sectionTitle = document.querySelector('.products-section .section-title');
     sectionTitle.textContent = `${category} Products`;
     
-    // Show message if no products found
+    
     showNoProductsMessage(visibleCount, category);
     
     console.log(`Filtered by ${category}: ${visibleCount} products found`);
@@ -1587,8 +1587,7 @@ function showAllProducts() {
 }
 
 function showNoProductsMessage(count, category) {
-    removeNoProductsMessage(); // Remove any existing mesage
-    
+    removeNoProductsMessage(); 
     if (count === 0) {
         const productsGrid = document.querySelector('.products-grid');
         const noProductsDiv = document.createElement('div');
@@ -1608,7 +1607,6 @@ function removeNoProductsMessage() {
     }
 }
 
-//  search function that works with categories
 function searchProducts(searchTerm) {
     if (!searchTerm) {
         showAllProducts();
@@ -1636,11 +1634,9 @@ function searchProducts(searchTerm) {
     
     showNoProductsMessage(visibleCount, `search "${searchTerm}"`);
 }
-        // Initialize cart variables
         let cartCount = 0;
         let cartItems = [];
 
-        // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize cart display
             updateCartDisplay();
@@ -1715,7 +1711,7 @@ window.addToCart = async function(productName, price, imageUrl) {
                     cartBadge.classList.remove('show');
                 }
                 
-                // Update cart badge for numbers 
+                //  cart badge for numbers 
                 if (cartCount > 99) {
                     cartBadge.textContent = '99+';
                 }
@@ -1747,14 +1743,14 @@ window.addToCart = async function(productName, price, imageUrl) {
                 console.error('Error showing success message:', error);
             }
         }
-        // ADDED: Toggle cart dropdown functions
+        // 
 async function toggleCart(event) {
     event.preventDefault();
     
     const cartDropdown = document.getElementById('cartDropdown');
     const cartOverlay = document.getElementById('cartOverlay');
     
-    // If opening cart, load data first
+    
     if (!cartDropdown.classList.contains('open')) {
         console.log('Opening cart, loading data...');
         await loadCartFromBackend();
@@ -1821,7 +1817,7 @@ function updateCartView() {
     
     console.log('Cart view updated with HTML');
 }
-// Helper Functions 
+
 function getOrCreateSessionId() {
     let sessionId = localStorage.getItem('cart_session_id');
     if (!sessionId) {
@@ -1898,96 +1894,552 @@ function getProductIdByName(productName) {
             return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
         };
 
-         function proceedToCheckout() {
-    if (cartItems.length === 0) {
-        alert('Your cart is empty!');
-        return;
-    }
-    
-    
-    const total = cartItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
-    
-    
-    const payButton = document.querySelector('.intaSendPayButton');
-    payButton.dataset.amount = total.toString();
-    payButton.innerHTML = `Pay now - KSh ${total.toLocaleString()}`;
-    
-    
-    if (confirm(`Proceed with payment of KSh ${total.toLocaleString()}?`)) {
-        
-        alert('Redirecting to IntaSend payment gateway...');
-        console.log('Processing payment:', total);
-        
-        // After successful payment clear cart
-        // clearCart();
-    }
-}
-        window.viewCart = function() {
-            console.log(' Cart Contents:', cartItems);
-            console.log(' Total Items:', cartCount);
-            console.log(' Total Value: KSh', getCartTotal().toLocaleString());
-            return cartItems;
-        };
 
-        
-        function handleImageError(img) {
-            img.style.display = 'none';
-            img.parentElement.innerHTML = '<div class="placeholder"></div>';
-        }
-        
-         async function loadCartFromBackend() {
-    try {
-        
-        const sessionId = getOrCreateSessionId();
-        
-        console.log('Loading cart for session:', sessionId);
-        //makes request to the end point
-        const response = await fetch(`/api/cart/${sessionId}`);
-        console.log('Cart API response status:', response.status);
-        
-        const result = await response.json();
-        console.log('Cart API response:', result);
-        
-        if (result.success && result.data) {
-            // Clear existing cart items
-            cartItems = [];
-            
-            // Process cart items from B.E
-            if (result.data.cartItems && result.data.cartItems.length > 0) {
-                cartItems = result.data.cartItems.map(item => {
-                    return {
-                        id: item.id,
-                        name: item.product.name,
-                        price: item.product.price,
-                        quantity: item.quantity,
-                        image: item.product.imageUrl || '',
-                        subtotal: item.subtotal || (item.product.price * item.quantity)
-                    };
-                });
-            }
-            
-            cartCount = result.data.totalItems || 0;
-            
-            console.log('Processed cart items:', cartItems);
-            console.log('Cart count:', cartCount);
-            
-            return true;
-        } else {
-            console.error('Backend error or no data:', result);
-            return false;
-        }
-    } catch (error) {
-        console.error('Error loading cart from backend:', error);
-        return false;
-    }
+const INTASEND_CONFIG = {
+    publicKey: 'ISPubKey_test_f8ae9370-dee6-42f8-a090-f7e4fbf6c383', 
+    baseURL: 'https://api.intasend.com/api/v1',
+    successURL: window.location.origin + '/payment-success.html'
+
+};
+async function proceedToCheckout() {
+    console.log('=STARTING CHECKOUT PROCESS =');
+    
+    if (cartItems.length === 0) {
+        alert('Your cart is empty!');
+        return;
+    }
+    
+    try {
+        console.log('About to collect customer info...');
+        
+        
+        const customerInfo = await collectCustomerInfo();
+        
+        console.log('Customer info collected successfully:', customerInfo);
+        
+      
+        const total = cartItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
+        console.log('Total calculated:', total);
+      
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        const originalText = checkoutBtn.textContent;
+        checkoutBtn.textContent = 'Processing...';
+        checkoutBtn.disabled = true;
+        
+        // 
+        const checkoutData = {
+            ...customerInfo,
+            amount: total,
+            currency: "KES",
+            api_ref: "order_" + Date.now(),
+            redirect_url: INTASEND_CONFIG.successURL,
+            comment: `Order for ${cartItems.length} items from Birgenshop`
+        };
+        
+       console.log('Sending to backend:', checkoutData);
+
+const response = await fetch('http://localhost:8080/api/orders/checkout', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(checkoutData)
+});
+
+console.log('Backend response status:', response.status);
+
+const result = await response.json();
+console.log('Backend response:', result);
+
+if (result.success && result.data.url) {
+    localStorage.setItem('pending_order', JSON.stringify({
+        items: cartItems,
+        total: total,
+        checkout_id: result.data.id,
+        api_ref: checkoutData.api_ref,
+        customer: customerInfo
+    }));
+    
+    console.log('Redirecting to:', result.data.url);
+    window.location.href = result.data.url;
+} else {
+    throw new Error(result.message || 'Failed to create checkout session');
+}
+        
+    } catch (error) {
+        console.error('=== CHECKOUT ERROR ===');
+        console.error('Error type:', typeof error);
+        console.error('Error message:', error);
+        console.error('Error string:', String(error));
+        
+        if (String(error) !== 'User cancelled') {
+            alert('Failed to proceed to checkout. Please try again. Error: ' + error);
+        } else {
+            console.log('User cancelled the checkout process');
+        }
+        
+       
+        const checkoutBtn = document.querySelector('.checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.textContent = 'Checkout';
+            checkoutBtn.disabled = false;
+        }
+    }
+}
+
+
+
+function collectCustomerInfo() {
+    return new Promise((resolve, reject) => {
+        console.log('= OPENING CUSTOMER INFO MODAL =');
+        
+        const modalHTML = `
+            <div class="customer-info-modal" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            ">
+                <div style="
+                    background: white;
+                    padding: 30px;
+                    border-radius: 12px;
+                    max-width: 400px;
+                    width: 90%;
+                ">
+                    <h3 style='margin-bottom: 20px; color: #333;'>Complete Your Order</h3>
+                    <form id="customerInfoForm">
+                        <div style="margin-bottom: 15px;">
+                            <label style='display: block; margin-bottom: 5px; font-weight: 600;'>First Name *</label>
+                            <input type="text" id="firstName" required style="
+                                width: 100%;
+                                padding: 12px;
+                                border: 2px solid #ddd;
+                                border-radius: 6px;
+                                font-size: 14px;
+                                box-sizing: border-box;
+                            ">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style='display: block; margin-bottom: 5px; font-weight: 600;'>Last Name *</label>
+                            <input type="text" id="lastName" required style="
+                                width: 100%;
+                                padding: 12px;
+                                border: 2px solid #ddd;
+                                border-radius: 6px;
+                                font-size: 14px;
+                                box-sizing: border-box;
+                            ">
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style='display: block; margin-bottom: 5px; font-weight: 600;'>Email *</label>
+                            <input type="email" id="customerEmail" required style="
+                                width: 100%;
+                                padding: 12px;
+                                border: 2px solid #ddd;
+                                border-radius: 6px;
+                                font-size: 14px;
+                                box-sizing: border-box;
+                            ">
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style='display: block; margin-bottom: 5px; font-weight: 600;'>Phone Number *</label>
+                            <input type="tel" id="customerPhone" required placeholder="+254700000000" style="
+                                width: 100%;
+                                padding: 12px;
+                                border: 2px solid #ddd;
+                                border-radius: 6px;
+                                font-size: 14px;
+                                box-sizing: border-box;
+                            ">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" id="cancelCustomerInfo" style="
+                                flex: 1;
+                                background: #666;
+                                color: white;
+                                border: none;
+                                padding: 12px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-weight: 600;
+                            ">Cancel</button>
+                            <button type="submit" style="
+                                flex: 1;
+                                background: #ff6900;
+                                color: white;
+                                border: none;
+                                padding: 12px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-weight: 600;
+                            ">Proceed to Payment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        console.log('Modal HTML added to page');
+        
+        //for submision
+        const form = document.getElementById('customerInfoForm');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('==FORM SUBMITTED==');
+            
+            const customerInfo = {
+                first_name: document.getElementById('firstName').value.trim(),
+                last_name: document.getElementById('lastName').value.trim(),
+                email: document.getElementById('customerEmail').value.trim(),
+                phone_number: document.getElementById('customerPhone').value.trim()
+            };
+            
+            console.log('Form data collected:', customerInfo);
+            
+           
+            if (!customerInfo.first_name || !customerInfo.last_name || !customerInfo.email || !customerInfo.phone_number) {
+                console.log('Validation failed: Missing required fields');
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+           
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(customerInfo.email)) {
+                console.log('Validation failed: Invalid email');
+                alert('Please enter a valid email address');
+                return;
+            }
+            
+            console.log('All validations passed, closing modal and resolving...');
+            
+           
+            const modal = document.querySelector('.customer-info-modal');
+            if (modal) {
+                modal.remove();
+                console.log('Modal removed');
+            }
+            
+            resolve(customerInfo);
+        });
+        
+        // cancel button
+        document.getElementById('cancelCustomerInfo').addEventListener('click', function() {
+            console.log('=== USER CLICKED CANCEL ===');
+            const modal = document.querySelector('.customer-info-modal');
+            if (modal) {
+                modal.remove();
+            }
+            reject('User cancelled');
+        });
+        
+        console.log('Event listeners attached');
+    });
+}
+
+// for payment succes
+async function handlePaymentReturn() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const checkout_id = urlParams.get('checkout_id');
+    const tracking_id = urlParams.get('tracking_id');
+    
+    if (checkout_id) {
+        try {
+            
+            showPaymentVerification();
+
+
+            const response = await fetch('https://api.intasend.com/api/v1/checkout/', {
+                headers: {
+                   'X-IntaSend-Public-API-Key': intasendPublicKey
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.state === 'COMPLETE') {
+               
+                const pendingOrder = JSON.parse(localStorage.getItem('pending_order') || '{}');
+                
+               
+                await clearCart();
+                
+                
+                localStorage.removeItem('pending_order');
+                
+               
+                showPaymentSuccess(result);
+                
+                await sendOrderConfirmation(result, pendingOrder);
+                
+            } else if (result.state === 'FAILED') {
+                showPaymentError('Payment failed. Please try again.');
+                restorePendingOrder();
+            } else {
+                showPaymentError('Payment is still being processed. Please wait.');
+            }
+            
+        } catch (error) {
+            console.error('Payment verification error:', error);
+            showPaymentError('Unable to verify payment. Please contact support.');
+            restorePendingOrder();
+        }
+    }
+}
+
+function showPaymentVerification() {
+    const modalHTML = `
+        <div class="payment-verification-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        ">
+            <div style="
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                text-align: center;
+                max-width: 400px;
+            ">
+                <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+                <h3>Verifying Payment...</h3>
+                <p>Please wait while we confirm your payment.</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function showPaymentSuccess(paymentResult) {
+    
+    const verificationModal = document.querySelector('.payment-verification-modal');
+    if (verificationModal) verificationModal.remove();
+    
+    const successHTML = `
+        <div class="payment-success-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        ">
+            <div style="
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                text-align: center;
+                max-width: 400px;
+            ">
+                <div style="font-size: 48px; color: #4CAF50; margin-bottom: 20px;">✓</div>
+                <h2 style='color: #4CAF50; margin-bottom: 20px;'>Payment Successful!</h2>
+                <p>Your order has been confirmed and will be processed shortly.</p>
+                <p><strong>Transaction ID:</strong> ${paymentResult.id}</p>
+                <p><strong>Amount:</strong> KSh ${parseInt(paymentResult.amount).toLocaleString()}</p>
+                <button onclick="closeSuccessModal()" style="
+                    background: #ff6900;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    margin-top: 20px;
+                    cursor: pointer;
+                    font-weight: 600;
+                ">Continue Shopping</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', successHTML);
+}
+
+function showPaymentError(message) {
+ 
+    const verificationModal = document.querySelector('.payment-verification-modal');
+    if (verificationModal) verificationModal.remove();
+    
+    const errorHTML = `
+        <div class="payment-error-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        ">
+            <div style="
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                text-align: center;
+                max-width: 400px;
+            ">
+                <div style="font-size: 48px; color: #ff4444; margin-bottom: 20px;">✗</div>
+                <h2 style='color: #ff4444; margin-bottom: 20px;'>Payment Error</h2>
+                <p>${message}</p>
+                <button onclick="closeErrorModal()" style="
+                    background: #ff6900;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    margin-top: 20px;
+                    cursor: pointer;
+                    font-weight: 600;
+                ">Try Again</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', errorHTML);
+}
+
+function closeSuccessModal() {
+    const modal = document.querySelector('.payment-success-modal');
+    if (modal) modal.remove();
+   
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+function closeErrorModal() {
+    const modal = document.querySelector('.payment-error-modal');
+    if (modal) modal.remove();
+   
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+function restorePendingOrder() {
+    const pendingOrder = JSON.parse(localStorage.getItem('pending_order') || '{}');
+    if (pendingOrder.items) {
+        cartItems = pendingOrder.items;
+        cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+        updateCartDisplay();
+        updateCartView();
+    }
+}
+
+async function sendOrderConfirmation(paymentResult, orderDetails) {
+    try {
+        const orderData = {
+            intasend_checkout_id: paymentResult.id,
+            intasend_tracking_id: paymentResult.tracking_id,
+            amount: paymentResult.amount,
+            currency: paymentResult.currency,
+            items: orderDetails.items,
+            payment_status: 'COMPLETED',
+            customer_email: paymentResult.email,
+            customer_phone: paymentResult.phone_number,
+            api_ref: paymentResult.api_ref,
+            customer_info: orderDetails.customer
+        };
+        
+        const response = await fetch('http://localhost:8080/api/orders/confirm', { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(orderData)
+        });
+        
+        if (!response.ok) {
+            console.error('Failed to save order to backend');
+        } else {
+            console.log('Order confirmation sent to backend');
+        }
+        
+    } catch (error) {
+        console.error('Error sending order confirmation:', error);
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+   //check for payment
+    handlePaymentReturn();
+});
+
+
+async function loadCartFromBackend() {
+    try {
+        const sessionId = getOrCreateSessionId();
+        
+        console.log('Loading cart for session:', sessionId);
+        
+        const response = await fetch(`http://localhost:8080/api/cart/${sessionId}`);
+        console.log('Cart API response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Cart API response:', result);
+        
+        if (result.success && result.data) {
+            
+            cartItems = [];
+            
+            
+            if (result.data.cartItems && result.data.cartItems.length > 0) {
+                cartItems = result.data.cartItems.map(item => {
+                    return {
+                        id: item.id,
+                        name: item.product.name,
+                        price: item.product.price,
+                        quantity: item.quantity,
+                        image: item.product.imageUrl || '',
+                        subtotal: item.subtotal || (item.product.price * item.quantity)
+                    };
+                });
+            }
+            
+            cartCount = result.data.totalItems || 0;
+            
+            console.log('Processed cart items:', cartItems);
+            console.log('Cart count:', cartCount);
+            
+            return true;
+        } else {
+            console.error('Backend error or no data:', result);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error loading cart from backend:', error);
+       
+        return false;
+    }
 }
 
 async function processPayment(orderId, amount) {
     try {
         const paymentData = {
             orderId: orderId,
-            paymentMethod: "CREDIT_CARD", // or get from user selection
-            // Add other payment details as needed
+            paymentMethod: "CREDIT_CARD", 
+           
         };
         
         console.log('Processing payment:', paymentData);
@@ -2029,7 +2481,7 @@ async function processPayment(orderId, amount) {
         const result = await response.json();
         
         if (result.success) {
-            // Reload cart data
+            
             await loadCartFromBackend();
             updateCartView();
             updateCartDisplay();
@@ -2041,13 +2493,13 @@ async function processPayment(orderId, amount) {
         console.error('Error removing cart item:', error);
     }
 }
-//  subscription function
+
 function subscribeNewsletter() {
     const emailInput = document.getElementById('newsletterEmail');
     const successMessage = document.getElementById('newsletterSuccess');
     const email = emailInput.value.trim();
 
-    //  email validation
+   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     if (!email) {
@@ -2060,7 +2512,7 @@ function subscribeNewsletter() {
         return;
     }
 
-    // Show success message
+   
     successMessage.classList.add('show');
     emailInput.value = '';
     

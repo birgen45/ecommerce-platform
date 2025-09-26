@@ -173,3 +173,89 @@ class ClearCartRequest {
     @NotBlank(message = "Session ID is required")
     private String sessionId;
 }
+
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class OrderConfirmationRequest {
+    private String intasend_checkout_id;
+    private String intasend_tracking_id;
+    private Double amount;
+    private String currency;
+    private String payment_status;
+    private String customer_email;
+    private String customer_phone;
+    private String api_ref;
+    private List<CartItemData> items;
+    private CustomerInfo customer_info;
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CartItemData {
+        private Long id;
+        private String name;
+        private Double price;
+        private Integer quantity;
+        private String image;
+    }
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CustomerInfo {
+        private String first_name;
+        private String last_name;
+        private String email;
+        private String phone_number;
+    }
+}
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class OrderDTO {
+    private Long id;
+    private String intasendCheckoutId;
+    private String intasendTrackingId;
+    private String apiRef;
+    private Double totalAmount;
+    private String currency;
+    private String paymentStatus;
+    private String customerEmail;
+    private String customerPhone;
+    private String customerFirstName;
+    private String customerLastName;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class OrderTrackingRequest {
+    @NotBlank(message = "API reference is required")
+    private String apiRef;
+}
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class CheckoutRequest {
+    private String first_name;
+    private String last_name;
+    private String email;
+    private String phone_number;
+    private Double amount;
+    private String api_ref;
+    private String redirect_url;
+    private String comment;
+}
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class CheckoutResponse {
+    private String url;
+    private String id;
+}
