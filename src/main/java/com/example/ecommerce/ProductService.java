@@ -4,13 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 // Product Service  This is the ONLY public class in this file
 @Service
 @RequiredArgsConstructor
@@ -162,9 +166,13 @@ class CartService {
             throw new RuntimeException("Product is not available");
         }
         
-        if (product.getStockQuantity() < request.getQuantity()) {
-            throw new RuntimeException("Insufficient stock");
-        }
+        if (product.getStockQuantity() == null || product.getStockQuantity() <= 0) {
+        throw new RuntimeException("Product is out of stock");
+    }
+    
+    if ("Out of Stock".equals(product.getStockStatus())) {
+        throw new RuntimeException("This product is currently unavailable");
+    }
         
         Cart cart = getOrCreateCart(request.getSessionId());
         
@@ -175,11 +183,13 @@ class CartService {
             CartItem cartItem = existingCartItem.get();
             int newQuantity = cartItem.getQuantity() + request.getQuantity();
             
-            if (product.getStockQuantity() < newQuantity) {
-                throw new RuntimeException("Insufficient stock");
-            }
+           if (product.getStockQuantity() < newQuantity) {
+            throw new RuntimeException("Cannot add more items. Only " + product.getStockQuantity() + " available in stock");
+        }
             
             cartItem.setQuantity(newQuantity);
+            cartItem.setPrice(product.getPrice());
+            cartItem.setUpdatedAt(java.time.LocalDateTime.now());
             cartItemRepository.save(cartItem);
             log.info("Updated cart item quantity for product: {}", product.getName());
         } else {
@@ -187,6 +197,9 @@ class CartService {
             cartItem.setCart(cart);
             cartItem.setProduct(product);
             cartItem.setQuantity(request.getQuantity());
+            cartItem.setPrice(product.getPrice());
+            cartItem.setCreatedAt(java.time.LocalDateTime.now());
+            cartItem.setUpdatedAt(java.time.LocalDateTime.now());
             cartItemRepository.save(cartItem);
             log.info("Added new item to cart: {}", product.getName());
         }
@@ -294,6 +307,7 @@ class CartService {
     }
 }
 
+
 // Category Service -  for category management
 @Service
 @RequiredArgsConstructor
@@ -386,3 +400,4 @@ class CategoryService {
         }
     }
 }
+    

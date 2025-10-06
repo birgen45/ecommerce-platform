@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity// tells springboot this class represents a database table
 @Table(name = "products")
-@Data  //lombok generates getters and setters 
+@Data  //lombok annotations generates getters and setters 
 @NoArgsConstructor
 @AllArgsConstructor
 public class Products {
@@ -22,10 +22,10 @@ public class Products {
     private Long id;
     
     @Column(nullable = false)
-    @NotBlank(message = "Product name is required")
+    @NotBlank(message = "Product name is required")//validation annotations
     private String name;
     
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")// sql datatype
     private String description;
     
     @Column(nullable = false, precision = 10, scale = 2)
@@ -47,6 +47,9 @@ public class Products {
     @Min(value = 0, message = "Stock quantity cannot be negative")
     private Integer stockQuantity = 0;
     
+    @Column(name = "stock_status", nullable = false)
+    private String stockStatus = "In Stock";
+
     @Column(nullable = false)
     private Boolean isActive = true;
     
@@ -69,10 +72,20 @@ public class Products {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        updateStockStatus();
     }
     
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+    private void updateStockStatus() {
+        if (stockQuantity == null || stockQuantity <= 0) {
+            this.stockStatus = "Out of Stock";
+        } else if (stockQuantity < 5) {
+            this.stockStatus = "Low Stock";
+        } else {
+            this.stockStatus = "In Stock";
+        }
     }
 }

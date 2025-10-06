@@ -28,6 +28,7 @@ public class ProductController {
     // GET /api/products  Returns all products for frontend grid
     @GetMapping
     public ResponseEntity<ApiResponse<List<ProductDTO>>> getAllProducts() {
+          //return wrapper containing list of products 
         try {
             List<ProductDTO> products = productService.getAllActiveProducts();
             return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully", products));
@@ -155,98 +156,6 @@ public class ProductController {
     }
 }
 
-
-@RestController
-@RequestMapping("/api/cart")
-@RequiredArgsConstructor
-@Slf4j
-@CrossOrigin(origins = "*", allowedHeaders = "*")
-class CartController {
-    
-    private final CartService cartService;
-    
-   
-    @PostMapping("/add")
-    public ResponseEntity<ApiResponse<CartDTO>> addToCart(@Valid @RequestBody AddToCartRequest request) {
-        try {
-            CartDTO cart = cartService.addToCart(request);
-            return ResponseEntity.ok(ApiResponse.success("Item added to cart successfully", cart));
-        } catch (RuntimeException e) {
-            log.error("Error adding to cart: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Error adding to cart", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to add item to cart"));
-        }
-    }
-    @GetMapping("/{sessionId}")
-    public ResponseEntity<ApiResponse<CartDTO>> getCart(@PathVariable String sessionId) {
-        try {
-            CartDTO cart = cartService.getCartBySessionId(sessionId);
-            return ResponseEntity.ok(ApiResponse.success("Cart retrieved successfully", cart));
-        } catch (Exception e) {
-            log.error("Error retrieving cart for session: {}", sessionId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to retrieve cart"));
-        }
-    }
-    
-    @GetMapping("/{sessionId}/count")
-    public ResponseEntity<ApiResponse<Integer>> getCartItemCount(@PathVariable String sessionId) {
-        try {
-            Integer count = cartService.getCartItemCount(sessionId);
-            return ResponseEntity.ok(ApiResponse.success("Cart count retrieved successfully", count));
-        } catch (Exception e) {
-            log.error("Error retrieving cart count for session: {}", sessionId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to retrieve cart count"));
-        }
-    }
-    
-    @PutMapping("/update")
-    public ResponseEntity<ApiResponse<CartDTO>> updateCartItem(@Valid @RequestBody UpdateCartItemRequest request) {
-        try {
-            CartDTO cart = cartService.updateCartItem(request);
-            return ResponseEntity.ok(ApiResponse.success("Cart item updated successfully", cart));
-        } catch (RuntimeException e) {
-            log.error("Error updating cart item: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Error updating cart item", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to update cart item"));
-        }
-    }
-    @DeleteMapping("/item/{cartItemId}")
-    public ResponseEntity<ApiResponse<CartDTO>> removeCartItem(
-            @PathVariable Long cartItemId, @RequestParam String sessionId) {
-        try {
-            CartDTO cart = cartService.removeCartItem(cartItemId, sessionId);
-            return ResponseEntity.ok(ApiResponse.success("Item removed successfully", cart));
-        } catch (Exception e) {
-            log.error("Error removing cart item: {} for session: {}", cartItemId, sessionId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to remove item"));
-        }
-            }
-
-    @DeleteMapping("/clear/{sessionId}")
-    public ResponseEntity<ApiResponse<String>> clearCart(@PathVariable String sessionId) {
-        try {
-            cartService.clearCart(sessionId);
-            return ResponseEntity.ok(ApiResponse.success("Cart cleared successfully", "Cart is now empty"));
-        } catch (Exception e) {
-            log.error("Error clearing cart for session: {}", sessionId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to clear cart"));
-        }
-    }
-}
-
-
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
@@ -347,74 +256,4 @@ class CategoryController {
                     .body(ApiResponse.error("Failed to delete category"));
         }
     }
-}
-@RestController
-@RequestMapping("/api/orders")
-@RequiredArgsConstructor
-@Slf4j
-@CrossOrigin(origins = "*", allowedHeaders = "*")
-class OrderController {
-    
-    @PostMapping("/confirm")
-    public ResponseEntity<ApiResponse<String>> confirmOrder(@RequestBody OrderConfirmationRequest request) {
-        try {
-            log.info("Confirming order: {}", request.getApi_ref());
-            return ResponseEntity.ok(ApiResponse.success("Order confirmed successfully", "Order saved"));
-        } catch (Exception e) {
-            log.error("Error confirming order", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to confirm order"));
-        }
-    }
-
-   @PostMapping("/checkout")
-public ResponseEntity<ApiResponse<Map<String, Object>>> createCheckout(@RequestBody CheckoutRequest request) {
-    try {
-        log.info("Creating IntaSend checkout for amount: {}", request.getAmount());
-        
-        // checkout data for IntaSend
-        Map<String, Object> checkoutData = new HashMap<>();
-        checkoutData.put("first_name", request.getFirst_name());
-        checkoutData.put("last_name", request.getLast_name());
-        checkoutData.put("email", request.getEmail());
-        checkoutData.put("phone_number", request.getPhone_number());
-        checkoutData.put("amount", request.getAmount());
-        checkoutData.put("currency", "KES");
-        checkoutData.put("api_ref", request.getApi_ref());
-        checkoutData.put("redirect_url", request.getRedirect_url());
-        checkoutData.put("comment", request.getComment());
-        
-        
-        WebClient webClient = WebClient.create();
-        
-        Map<String, Object> intasendResponse = webClient.post()
-            .uri("https://api.intasend.com/api/v1/checkout/")
-            .header("X-IntaSend-Public-API-Key", "ISPubKey_test_f8ae9370-dee6-42f8-a090-f7e4fbf6c383")
-            .header("Content-Type", "application/json")
-            .bodyValue(checkoutData)
-            .retrieve()
-            .onStatus(
-                status -> status.isError(),
-                clientResponse -> clientResponse.bodyToMono(String.class)
-                    .map(error -> new RuntimeException("IntaSend API error: " + error))
-            )
-            .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-            .block();
-        
-        // Extract the checkout URL from IntaSend response
-        Map<String, Object> responseData = new HashMap<>();
-        responseData.put("url", intasendResponse.get("url"));
-        responseData.put("id", intasendResponse.get("id"));
-        responseData.put("signature", intasendResponse.get("signature"));
-        
-        log.info("Checkout created successfully. URL: {}", responseData.get("url"));
-        
-        return ResponseEntity.ok(ApiResponse.success("Checkout created successfully", responseData));
-        
-    } catch (Exception e) {
-        log.error("Error creating checkout: {}", e.getMessage(), e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Failed to create checkout: " + e.getMessage()));
-    }
-  }
 }

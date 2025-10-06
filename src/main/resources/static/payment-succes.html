@@ -3,430 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Success - Birgenshop</title>
+    <title>Payment Success</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-
-        .container {
+        .success-container {
             background: white;
-            padding: 50px 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            border-radius: 12px;
             text-align: center;
-            max-width: 500px;
-            width: 90%;
-            margin: 20px;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
-
         .success-icon {
-            width: 80px;
-            height: 80px;
-            background: #4CAF50;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 30px;
-            font-size: 40px;
-            color: white;
-            animation: checkmark 0.6s ease-in-out;
-        }
-
-        @keyframes checkmark {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        h1 {
-            font-size: 32px;
+            font-size: 64px;
             color: #4CAF50;
             margin-bottom: 20px;
-            font-weight: 700;
         }
-
-        .thank-you {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .order-details {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 12px;
-            margin: 30px 0;
-            text-align: left;
-        }
-
-        .order-details h3 {
+        h1 {
             color: #333;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
             margin-bottom: 10px;
-            font-size: 14px;
         }
-
-        .detail-row:last-child {
-            margin-bottom: 0;
-            font-weight: 600;
-            color: #ff6900;
-            font-size: 16px;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-            margin-top: 15px;
+        p {
+            color: #666;
+            margin-bottom: 20px;
         }
-
-        .actions {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 30px;
-        }
-
         .btn {
-            display: inline-block;
-            padding: 15px 30px;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-            min-width: 150px;
-        }
-
-        .btn-primary {
             background: #ff6900;
             color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+            cursor: pointer;
         }
-
-        .btn-primary:hover {
-            background: #e55a00;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 105, 0, 0.3);
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #666;
-            border: 2px solid #ddd;
-        }
-
-        .btn-secondary:hover {
+        .details {
             background: #f8f9fa;
-            border-color: #ff6900;
-            color: #ff6900;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f0f0f0;
-            border-top: 4px solid #ff6900;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error {
-            display: none;
-            background: #ffebee;
-            border: 2px solid #f44336;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             margin: 20px 0;
-            color: #c62828;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-                margin: 10px;
-            }
-
-            h1 {
-                font-size: 24px;
-            }
-
-            .success-icon {
-                width: 60px;
-                height: 60px;
-                font-size: 30px;
-            }
-
-            .actions {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
+            text-align: left;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <h3>Verifying Payment...</h3>
-            <p>Please wait while we confirm your payment.</p>
+    <div class="success-container">
+        <div class="success-icon">✓</div>
+        <h1>Payment Successful!</h1>
+        <p>Thank you for your purchase. Your order has been confirmed.</p>
+        
+        <div class="details" id="orderDetails">
+            <p><strong>Processing your order...</strong></p>
         </div>
-
-        <div class="error" id="error">
-            <h3>Payment Verification Error</h3>
-            <p id="errorMessage">Unable to verify payment. Please contact support.</p>
-        </div>
-
-        <div id="successContent" style="display: none;">
-            <div class="success-icon">✓</div>
-            <h1>Payment Successful!</h1>
-            <p class="thank-you">
-                Thank you for your purchase! Your order has been confirmed and will be processed shortly.
-                You will receive a confirmation email with your order details.
-            </p>
-
-            <div class="order-details" id="orderDetails" style="display: none;">
-                <h3>Order Summary</h3>
-                <div class="detail-row">
-                    <span>Transaction ID:</span>
-                    <span id="transactionId">-</span>
-                </div>
-                <div class="detail-row">
-                    <span>Order Reference:</span>
-                    <span id="orderRef">-</span>
-                </div>
-                <div class="detail-row">
-                    <span>Payment Method:</span>
-                    <span id="paymentMethod">-</span>
-                </div>
-                <div class="detail-row">
-                    <span>Total Amount:</span>
-                    <span id="totalAmount">KSh 0</span>
-                </div>
-            </div>
-
-            <div class="actions">
-                <a href="/" class="btn btn-primary">Continue Shopping</a>
-                <button onclick="trackOrder()" class="btn btn-secondary" id="trackBtn">Track Order</button>
-            </div>
-        </div>
+        
+        <a href="http://localhost:8080" class="btn">Continue Shopping</a>
     </div>
 
     <script>
-        // IntaSend Configuration - Replace with your actual keys
-        const INTASEND_CONFIG = {
-            publicKey: 'YOUR_PUBLIC_API_KEY_HERE', // Replace with your actual public key
-            baseURL: 'https://api.intasend.com/api/v1'
-        };
-
-        // Show loading initially
-        document.getElementById('loading').style.display = 'block';
-
-        // Handle payment return and verification
-        async function handlePaymentReturn() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const checkout_id = urlParams.get('checkout_id');
-            const tracking_id = urlParams.get('tracking_id');
-            
-            if (!checkout_id) {
-                showError('No payment information found. Please contact support if you completed a payment.');
-                return;
-            }
-
-            try {
-                // Verify payment with IntaSend
-                const response = await fetch(`${INTASEND_CONFIG.baseURL}/checkout/${checkout_id}/`, {
-                    headers: {
-                        'X-IntaSend-Public-API-Key': INTASEND_CONFIG.publicKey
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to verify payment');
-                }
-
-                const result = await response.json();
-                console.log('Payment verification result:', result);
-
-                if (result.state === 'COMPLETE') {
-                    // Payment successful
-                    const pendingOrder = JSON.parse(localStorage.getItem('pending_order') || '{}');
-                    
-                    // Show success
-                    showSuccess(result, pendingOrder);
-                    
-                    // Send order confirmation to backend
-                    await sendOrderConfirmation(result, pendingOrder);
-                    
-                    // Clear pending order and cart data
-                    localStorage.removeItem('pending_order');
-                    localStorage.removeItem('cart_session_id');
-                    
-                } else if (result.state === 'FAILED') {
-                    showError('Payment failed. Please try again or contact support.');
-                } else if (result.state === 'PENDING') {
-                    showError('Payment is still being processed. Please wait a few minutes and refresh this page.');
-                } else {
-                    showError('Payment status unclear. Please contact support with your transaction ID: ' + checkout_id);
-                }
-                
-            } catch (error) {
-                console.error('Payment verification error:', error);
-                showError('Unable to verify payment. Please contact support with your transaction details.');
-            }
-        }
-
-        function showSuccess(paymentResult, orderDetails) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('successContent').style.display = 'block';
-
-            // Show order details if available
-            if (paymentResult && paymentResult.id) {
-                document.getElementById('orderDetails').style.display = 'block';
-                document.getElementById('transactionId').textContent = paymentResult.id;
-                document.getElementById('orderRef').textContent = paymentResult.api_ref || 'N/A';
-                document.getElementById('paymentMethod').textContent = getPaymentMethodName(paymentResult.payment_method);
-                document.getElementById('totalAmount').textContent = `KSh ${parseInt(paymentResult.amount || 0).toLocaleString()}`;
-            }
-
-            // Store order reference for tracking
-            if (paymentResult.api_ref) {
-                localStorage.setItem('last_order_ref', paymentResult.api_ref);
-            }
-        }
-
-        function showError(message) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('successContent').style.display = 'none';
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('errorMessage').textContent = message;
-        }
-
-        function getPaymentMethodName(method) {
-            const methods = {
-                'CARD': 'Credit/Debit Card',
-                'MPESA': 'M-Pesa',
-                
-                'BANK': 'Bank Transfer'
-            };
-            return methods[method] || method || 'Online Payment';
-        }
-
-        async function sendOrderConfirmation(paymentResult, orderDetails) {
-            try {
-                const orderData = {
-                    intasend_checkout_id: paymentResult.id,
-                    intasend_tracking_id: paymentResult.tracking_id,
-                    amount: paymentResult.amount,
-                    currency: paymentResult.currency || 'KES',
-                    payment_status: 'COMPLETED',
-                    customer_email: paymentResult.email,
-                    customer_phone: paymentResult.phone_number,
-                    api_ref: paymentResult.api_ref,
-                    items: orderDetails.items || [],
-                    customer_info: orderDetails.customer || {
-                        first_name: 'Customer',
-                        last_name: 'Name',
-                        email: paymentResult.email,
-                        phone_number: paymentResult.phone_number
-                    }
-                };
-
-                console.log('Sending order confirmation:', orderData);
-
-                const response = await fetch('/api/orders/confirm', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(orderData)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log('Order confirmation sent successfully');
-                } else {
-                    console.error('Failed to save order to backend:', result.message);
-                }
-                
-            } catch (error) {
-                console.error('Error sending order confirmation:', error);
-               
-            }
-        }
-
-        function trackOrder() {
-            const orderRef = localStorage.getItem('last_order_ref');
-            if (orderRef) {
-                alert(`Your order reference is: ${orderRef}\n\nYou can use this to track your order. Order tracking features will be available soon.`);
-            } else {
-                alert('Order reference not found. Please check your email for order details.');
-            }
-        }
-
-       
-        document.addEventListener('DOMContentLoaded', function() {
-            
-            setTimeout(() => {
-                handlePaymentReturn();
-            }, 1000);
-        });
-
-       
-        function cleanupURL() {
-            if (window.history.replaceState) {
-                const url = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                window.history.replaceState({}, document.title, url);
-            }
-        }
-
+        // Extract payment details from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const tracking_id = urlParams.get('tracking_id');
+        const checkout_id = urlParams.get('checkout_id');
         
-        setTimeout(cleanupURL, 5000);
+        if (tracking_id || checkout_id) {
+            document.getElementById('orderDetails').innerHTML = `
+                <p><strong>Transaction ID:</strong><br>${tracking_id || checkout_id}</p>
+                <p style="font-size: 12px; color: #666;">You will receive a confirmation email shortly.</p>
+            `;
+        }
+
+        // Clear pending order from localStorage
+        localStorage.removeItem('pending_order');
     </script>
 </body>
 </html>

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,12 +30,23 @@ public class CartItem {
     @Min(value = 1, message = "Quantity must be at least 1")
     private Integer quantity;
     
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+    @Column(name = "user_id")
+    private Integer userId;
+
+    @Column(name= "created_at", nullable= false, updatable=false)
+     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    
     
     @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
-    
 }
+    
+

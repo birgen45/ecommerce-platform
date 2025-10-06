@@ -1,7 +1,7 @@
 package com.example.ecommerce;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;//allow crud func
+import org.springframework.data.jpa.repository.Query;// anotation for writing query
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Optional;
 
 // Products Repository This is the ONLY public class
-@Repository
+@Repository //spring component for database acces
 public interface ProductsRepository extends JpaRepository<Products, Long> {
     
     List<Products> findByIsActiveTrue();
-    
+    // tells the method this is a query
     List<Products> findByCategoryAndIsActiveTrue(String category);
     
     @Query("SELECT p FROM Products p WHERE p.isActive = true AND " +

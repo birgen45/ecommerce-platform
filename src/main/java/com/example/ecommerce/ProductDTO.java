@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-// Product Data transfer objects  This is the ONLY public class 
+// Product DTO
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,19 +34,17 @@ public class ProductDTO {
     
     @Min(value = 0, message = "Stock quantity cannot be negative")
     private Integer stockQuantity;
-    
+    private String stockStatus;
     private Boolean isActive;
     
     private BigDecimal rating;
-    
     private Integer ratingCount;
     
     private LocalDateTime createdAt;
-    
     private LocalDateTime updatedAt;
 }
 
-// Cart DTO - Package-private (no 'public' keyword)
+// Cart DTO
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -60,7 +58,7 @@ class CartDTO {
     private LocalDateTime updatedAt;
 }
 
-// CartItem DTO - Package-private (no 'public' keyword)
+// Cart Item DTO
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -75,7 +73,7 @@ class CartItemDTO {
     private LocalDateTime createdAt;
 }
 
-// Add to Cart Request DTO - Package-private (no 'public' keyword)
+// Add to Cart Request
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -91,18 +89,7 @@ class AddToCartRequest {
     private String sessionId;
 }
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class UpdateCartItemRequest {
-    @NotNull(message = "Cart item ID is required")
-    private Long cartItemId;
-    
-    @NotNull(message = "Quantity is required")
-    @Min(value = 1, message = "Quantity must be at least 1")
-    private Integer quantity;
-}
-
+// Category DTO
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -118,20 +105,7 @@ class CategoryDTO {
     private LocalDateTime createdAt;
 }
 
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class SearchRequest {
-    private String searchTerm;
-    private String category;
-    private BigDecimal minPrice;
-    private BigDecimal maxPrice;
-    private String sortBy; // name, price, createdAt
-    private String sortDirection; // asc, desc
-}
-
-// API Response DTO 
+// API Response Wrapper
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -154,41 +128,40 @@ class ApiResponse<T> {
     }
 }
 
-
+// Checkout Request (for IntaSend)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-class RemoveCartItemRequest {
-    @NotNull(message = "Cart item ID is required")
-    private Long cartItemId;
-    
-    @NotBlank(message = "Session ID is required")
-    private String sessionId;
-}
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class ClearCartRequest {
-    @NotBlank(message = "Session ID is required")
-    private String sessionId;
+class CheckoutRequest {
+    private String first_name;
+    private String last_name;
+    private String email;
+    private String phone_number;
+    private Double amount;
+    private String currency;
+    private String api_ref;
+    private String redirect_url;
+    private String comment;
 }
 
 
+
+
+// Order Confirmation Request
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 class OrderConfirmationRequest {
-    private String intasend_checkout_id;
-    private String intasend_tracking_id;
+    private String intasendCheckoutId; 
+    private String intasendTrackingId;   
     private Double amount;
     private String currency;
-    private String payment_status;
-    private String customer_email;
-    private String customer_phone;
-    private String api_ref;
+    private String paymentStatus;        
+    private String customerEmail;        
+    private String customerPhone;        
+    private String apiRef;               
     private List<CartItemData> items;
-    private CustomerInfo customer_info;
+    private CustomerInfo customerInfo;   
     
     @Data
     @NoArgsConstructor
@@ -205,13 +178,14 @@ class OrderConfirmationRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CustomerInfo {
-        private String first_name;
-        private String last_name;
+        private String firstName;     
+        private String lastName;      
         private String email;
-        private String phone_number;
+        private String phoneNumber;   
     }
 }
 
+// Order confirmationDTO
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -220,42 +194,29 @@ class OrderDTO {
     private String intasendCheckoutId;
     private String intasendTrackingId;
     private String apiRef;
-    private Double totalAmount;
+    private BigDecimal totalAmount;
     private String currency;
     private String paymentStatus;
     private String customerEmail;
     private String customerPhone;
     private String customerFirstName;
     private String customerLastName;
+    private List<OrderItemDTO> orderItems;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
 
+// Order Item DTO 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-class OrderTrackingRequest {
-    @NotBlank(message = "API reference is required")
-    private String apiRef;
-}
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class CheckoutRequest {
-    private String first_name;
-    private String last_name;
-    private String email;
-    private String phone_number;
-    private Double amount;
-    private String api_ref;
-    private String redirect_url;
-    private String comment;
-}
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-class CheckoutResponse {
-    private String url;
-    private String id;
+class OrderItemDTO {
+    private Long id;
+    private Long orderId;  
+    private Long productId;
+    private String productName;
+    private BigDecimal price;
+    private Integer quantity;
+    private BigDecimal subtotal;
+    private LocalDateTime createdAt;  
 }
