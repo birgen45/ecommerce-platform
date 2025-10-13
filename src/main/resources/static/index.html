@@ -1848,90 +1848,113 @@ async function proceedToCheckout() {
     }
     
     try {
-        console.log('About to collect customer info...');
-        
-        
+        // Collect customer information
         const customerInfo = await collectCustomerInfo();
+        console.log('Customer info collected:', customerInfo);
         
-        console.log('Customer info collected successfully:', customerInfo);
         
-      
         const total = cartItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
         console.log('Total calculated:', total);
-      
+        
+    
         const checkoutBtn = document.querySelector('.checkout-btn');
-        const originalText = checkoutBtn.textContent;
         checkoutBtn.textContent = 'Processing...';
         checkoutBtn.disabled = true;
         
-        console.log('=== CHECKOUT DEBUG ===');
-        console.log('cartItems before mapping:', cartItems);
-
-        const checkoutData = {
-    ...customerInfo,
-    amount: total,
-    currency: "KES",
-    api_ref: "order_" + Date.now(),
-    redirect_url: window.location.origin + window.location.pathname + '?payment=success',  // Add query param
-    comment: `Order for ${cartItems.length} items from Birgenshop`,
-     
-     items: cartItems.map(item => {
-    const productId = item.productId || item.product?.id || item.id;
-    console.log(`Mapping item: ${item.name}, productId found: ${productId}`);
-    return {
-        id: productId,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity
-    };
-     })
-};
-
-        console.log('=== CHECKOUT DATA BEING SENT ===', checkoutData);
-        console.log('Items array being sent:', checkoutData.items);
-       console.log('Sending to backend:', checkoutData);
-
-const response = await fetch('http://localhost:8080/api/orders/checkout', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(checkoutData)
-});
-
-console.log('Backend response status:', response.status);
-
-const result = await response.json();
-console.log('Backend response:', result);
-
-if (result.success && result.data.url) {
-    localStorage.setItem('pending_order', JSON.stringify({
-        items: cartItems,
-        total: total,
-        checkout_id: result.data.id,
-        api_ref: checkoutData.api_ref,
-        customer: customerInfo
-    }));
+        // generates a unique reference
+        const api_ref = "order_" + Date.now();
+        
+          //create a pending oder
+        const pendingOrderData = {
+            apiRef: api_ref,
+            amount: total,
+            currency: "KES",
+            paymentStatus: 'PENDING',
+            customerEmail: customerInfo.email,
+            customerPhone: customerInfo.phone_number,
+            intasendCheckoutId: null,
+            intasendTrackingId: null,
+            items: cartItems.map(item => {
+                const productId = item.productId || item.product?.id || item.id;
+                console.log(`Mapping item: ${item.name}, productId: ${productId}`);
+                return {
+                    id: productId,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity
+                };
+            }),
+            customerInfo: {
+                firstName: customerInfo.first_name,
+                lastName: customerInfo.last_name,
+                email: customerInfo.email,
+                phoneNumber: customerInfo.phone_number
+            }
+        };
+        
+        console.log('Creating pending order:', pendingOrderData);
+        
+        const pendingResponse = await fetch('http://localhost:8080/api/orders/create-pending', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(pendingOrderData)
+        });
+        
+        const pendingResult = await pendingResponse.json();
+        console.log('Pending order response:', pendingResult);
+        
+        if (!pendingResult.success) {
+            throw new Error('Failed to create order: ' + pendingResult.message);
+        }
+        
+        console.log('Order created successfully with ID:', pendingResult.data.id);
+        
     
-    console.log('Redirecting to:', result.data.url);
-    window.location.href = result.data.url;
-} else {
-    throw new Error(result.message || 'Failed to create checkout session');
-}
+        const checkoutData = {
+            ...customerInfo,
+            amount: total,
+            currency: "KES",
+            api_ref: api_ref,
+            redirect_url: window.location.origin + window.location.pathname + '?payment=success',
+            comment: `Order for ${cartItems.length} items from Birgenshop`
+        };
+        
+        console.log('Sending to IntaSend checkout:', checkoutData);
+        
+        const response = await fetch('http://localhost:8080/api/orders/checkout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(checkoutData)
+        });
+        
+        const result = await response.json();
+        console.log('IntaSend response:', result);
+        
+        if (result.success && result.data.url) {
+        
+            localStorage.setItem('pending_order', JSON.stringify({
+                orderId: pendingResult.data.id,
+                api_ref: api_ref,
+                items: cartItems,
+                total: total,
+                customer: customerInfo
+            }));
+            
+            console.log('Redirecting to payment:', result.data.url);
+            window.location.href = result.data.url;
+        } else {
+            throw new Error(result.message || 'Failed to create checkout session');
+        }
         
     } catch (error) {
-        console.error('=CHECKOUT ERROR==');
-        console.error('Error type:', typeof error);
-        console.error('Error message:', error);
-        console.error('Error string:', String(error));
+        console.error('Checkout error:', error);
         
         if (String(error) !== 'User cancelled') {
-            alert('Failed to proceed to checkout. Please try again. Error: ' + error);
+            alert('Failed to proceed to checkout. Error: ' + error.message);
         } else {
             console.log('User cancelled the checkout process');
         }
         
-       
         const checkoutBtn = document.querySelector('.checkout-btn');
         if (checkoutBtn) {
             checkoutBtn.textContent = 'Checkout';
@@ -2111,49 +2134,35 @@ async function handlePaymentReturn() {
             // Get pending order from localStorage
             const pendingOrder = JSON.parse(localStorage.getItem('pending_order') || '{}');
             
-            if (!pendingOrder.items || pendingOrder.items.length === 0) {
-                throw new Error('No pending order found');
+            if (!pendingOrder.api_ref) {
+                throw new Error('No pending order reference found');
             }
             
-            // Send order confirmation to backend
-            const orderConfirmation = {
+            console.log('Pending order found:', pendingOrder);
+            
+            // UPDATE the existing order status 
+            const updateData = {
+                apiRef: pendingOrder.api_ref,
                 intasendCheckoutId: checkout_id,
                 intasendTrackingId: tracking_id,
-                amount: pendingOrder.total,
-                currency: 'KES',
-                paymentStatus: 'COMPLETED',
-                customerEmail: pendingOrder.customer.email,
-                customerPhone: pendingOrder.customer.phone_number,
-                apiRef: pendingOrder.api_ref,
-                items: pendingOrder.items.map(item => ({
-                    id: item.productId || item.id,
-                  name: item.name,
-                  price: item.price,
-                  quantity: item.quantity
-                    })),
-                customerInfo: {
-                    firstName: pendingOrder.customer.first_name,
-                    lastName: pendingOrder.customer.last_name,
-                    email: pendingOrder.customer.email,
-                    phoneNumber: pendingOrder.customer.phone_number
-                }
+                paymentStatus: 'COMPLETED'
             };
             
-            console.log('Sending order confirmation:', orderConfirmation);
+            console.log('Updating order status:', updateData);
             
-            const response = await fetch('http://localhost:8080/api/orders/confirm', {
-                method: 'POST',
+            const response = await fetch('http://localhost:8080/api/orders/update-status', {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(orderConfirmation)
+                body: JSON.stringify(updateData)
             });
             
             const result = await response.json();
-            console.log('Order confirmation response:', result);
+            console.log('Order update response:', result);
             
             if (result.success) {
-                // Clear cart after successful order
+                // Clear cart after successful payment
                 await clearCart();
                 localStorage.removeItem('pending_order');
                 
@@ -2163,10 +2172,9 @@ async function handlePaymentReturn() {
                     amount: pendingOrder.total
                 });
                 
-                // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
-                throw new Error(result.message || 'Failed to confirm order');
+                throw new Error(result.message || 'Failed to update order status');
             }
             
         } catch (error) {

@@ -128,4 +128,25 @@ public ResponseEntity<?> handleWebhook(@RequestBody Map<String, Object> payload)
     
     return ResponseEntity.ok(Map.of("received", true));
 }
+
+
+@PostMapping("/create-pending")
+public ResponseEntity<?> createPendingOrder(@RequestBody OrderConfirmationRequest request) {
+    try {
+        request.setPaymentStatus("PENDING");
+        OrderDTO order = orderService.saveOrder(request);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", order);
+        return ResponseEntity.ok(response);
+    } catch (Exception e) {
+        // Return error but don't fail
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("success", false);
+        errorResponse.put("message", e.getMessage());
+        return ResponseEntity.badRequest().body(errorResponse);
+       }
+     }
+    
 }
