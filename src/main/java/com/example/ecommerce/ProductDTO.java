@@ -37,8 +37,7 @@ public class ProductDTO {
     private String stockStatus;
     private Boolean isActive;
     
-    private BigDecimal rating;
-    private Integer ratingCount;
+    
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -100,7 +99,7 @@ class CategoryDTO {
     private String name;
     
     private String description;
-    private String iconEmoji;
+   
     private Boolean isActive;
     private LocalDateTime createdAt;
 }

@@ -24,9 +24,6 @@ public class Category {
     @Column(columnDefinition = "TEXT")
     private String description;
     
-    @Column(name = "icon_emoji")
-    private String iconEmoji;
-    
     @Column(nullable = false)
     private Boolean isActive = true;
     

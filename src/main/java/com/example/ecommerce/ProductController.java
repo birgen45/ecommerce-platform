@@ -17,7 +17,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 
 @RestController //handle  web request and returndata 
-@RequestMapping("/api/products") //maps all methods  in this class to a base url path 'api/pro'
+@RequestMapping("/api/products") //maps all methods  in this class to a base url path 
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*", allowedHeaders = "*") //allow request from any domain

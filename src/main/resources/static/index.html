@@ -1223,7 +1223,7 @@
         </div>
     </div>
 
-    <header class="main-header">
+  <header class="main-header">
         <div class="header-content">
             <div class="logo">Shop</div>
     <div class="search-container">
@@ -1248,18 +1248,9 @@
 
     <nav class="nav-menu">
     <div class="nav-container">
-        <ul class="nav-list">
-            
-            <li class="nav-item"><a href="#" class="nav-link" onclick="filterByCategory('Electronics')">Electronics</a></li>
-            <li class="nav-item"><a href="#" class="nav-link" onclick="filterByCategory('Fashion')">Fashion</a></li>
-            <li class="nav-item"><a href="#" class="nav-link" onclick="filterByCategory('Home & Garden')">Home</a></li>
-            <li class="nav-item"><a href="#" class="nav-link" onclick="filterByCategory('Sports')">Sports</a></li>
-            <li class="nav-item"><a href="#" class="nav-link" onclick="filterByCategory('Gaming')">Gaming</a></li>
-            <li class="nav-item"><a href="#" class="nav-link" onclick="filterByCategory('Books')">Books</a></li>
 
-            <li class="nav-item"><a href="#" class="nav-link active" onclick="showAllProducts()">All Products</a></li>
-        
-        </ul>
+        <ul class="nav-list" id="navList">
+           </ul>
     </div>
 </nav>
 
@@ -1276,43 +1267,17 @@
         
             <section class="categories-section">
                 <h2 class="section-title">Shop by Category</h2>
-                <div class="categories-grid">
-                    <div class="category-card" onclick="filterByCategory('Electronics')">
-                        <div class="category-icon"></div>
-                        <div class="category-name">Electronics</div>
-                    </div>
-                   <div class="category-card" onclick="filterByCategory('Fashion')">
-                    <div class="category-icon"></div>
-                   <div class="category-name">Fashion</div>
-                    </div>
-
-                    <div class="category-card" onclick="filterByCategory('Home')">
-                    <div class="category-icon"></div>
-                     <div class="category-name">Home</div>
-                    </div>
-                   <div class="category-card" onclick="filterByCategory('Books')">
-                    <div class="category-icon"></div>
-                    <div class="category-name">Books</div>
-                    </div>
-                    <div class="category-card" onclick="filterByCategory('Sports')">
-                        <div class="category-icon"></div>
-                        <div class="category-name">Sports</div>
-                    </div>
-                
-                    <div class="category-card" onclick="filterByCategory('Gaming')">
-                        <div class="category-icon"></div>
-                        <div class="category-name">Gaming</div>
-                    </div>
-                </div>
-            </section>what 
-
-            <section class="products-section">
-                <h2 class="section-title">Featured Products</h2>
-                <div class="products-grid" id="productsGrid">
-                    
-                </div>
+                <div class="categories-grid" id="categoriesGrid">
+    
+                 </div>
             </section>
-        </div>
+            <section class="products-section">
+            <h2 class="section-title">Featured Products</h2>
+            <div class="products-grid" id="productsGrid">
+        
+            </div>
+</section>
+
     </main>
 <div class="cart-dropdown" id="cartDropdown">
         <div class="cart-header">
@@ -1339,7 +1304,7 @@
     </div>
 
     
-    <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+    
 
     
     <div class="cart-success" id="cartSuccess">
@@ -1351,6 +1316,7 @@
 
 <!-- Modal Overlay -->
 <div class="product-modal-overlay" id="productModalOverlay" onclick="closeProductModal()"></div>
+
     <script>
 
 let allProducts = [];
@@ -1359,12 +1325,37 @@ let cartCount = 0;
 let cartItems = [];
 
 // Load products from database on page load
-document.addEventListener('DOMContentLoaded', function() {
-    loadProductsFromDatabase();
+document.addEventListener('DOMContentLoaded',async function() {
+     console.log('Starting initialization...');
+
+    await loadCategories();
+    console.log('Categories loaded');
+
+     await loadProductsFromDatabase();
+    console.log('Products loaded');
     updateCartDisplay();
     handlePaymentReturn();
     console.log('System initialized');
 });
+ // Add the loadCategories function from db
+async function loadCategories() {
+    try {
+        console.log('Loading categories from database...');
+        const response = await fetch('http://localhost:8080/api/categories');
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            populateNavigation(result.data);
+            populateCategoryCards(result.data);
+            populateFooterCategories(result.data);
+            console.log(`Loaded ${result.data.length} categories`);
+        }
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+    
+
 
 // Load products from backend database
 async function loadProductsFromDatabase() {
@@ -1391,6 +1382,52 @@ async function loadProductsFromDatabase() {
         console.error('Error loading products:', error);
         showErrorMessage('Unable to connect to server. Please refresh the page.');
     }
+}
+    function populateNavigation(categories) {
+    const navList = document.getElementById('navList');
+    if (!navList) {
+        console.error(' navList element not found!');
+        return;
+    }
+    
+    navList.innerHTML = categories.map(cat => `
+        <li class="nav-item">
+            <a href="#" class="nav-link" onclick="event.preventDefault(); filterByCategory('${cat.name}');">${cat.name}</a>
+        </li>
+    `).join('') + `
+        <li class="nav-item">
+            <a href="#" class="nav-link active" onclick="event.preventDefault(); showAllProducts();">All Products</a>
+        </li>
+    `;
+    console.log('Navigation populated');
+}
+     //Populate Category Cards
+function populateCategoryCards(categories) {
+    const categoriesGrid = document.getElementById('categoriesGrid');
+    if (!categoriesGrid) {
+        console.error(' categoriesGrid element not found!');
+        return;
+    } 
+    categoriesGrid.innerHTML = categories.map(cat => `
+        <div class="category-card" onclick="filterByCategory('${cat.name}')">
+            <div class="category-name" style="margin-top: 0;">${cat.name}</div>
+         </div>
+    `).join('');
+    console.log(' Category cards populated');
+}
+
+// 3. Populate Footer
+function populateFooterCategories(categories) {
+    const footerCategories = document.getElementById('footerCategories');
+    if (!footerCategories) {
+        console.error('❌ footerCategories element not found!');
+        return;
+    }
+    
+    footerCategories.innerHTML = categories.map(cat => `
+        <li><a href="#" onclick="event.preventDefault(); filterByCategory('${cat.name}'); window.scrollTo({top:0,behavior:'smooth'});">${cat.name}</a></li>
+    `).join('');
+    console.log('✅ Footer categories populated');
 }
 
 //  Display products dynamically
@@ -1427,15 +1464,7 @@ function displayProducts(products) {
 }
 
 // Helper: Generate star ratings
-function getStarRating(rating) {
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5 ? 1 : 0;
-    const emptyStars = 5 - fullStars - halfStar;
-    
-    return '⭐'.repeat(fullStars) + 
-           (halfStar ? '✨' : '') + 
-           '☆'.repeat(emptyStars);
-}
+
 
 // Helper: Show error message
 function showErrorMessage(message) {
@@ -1732,22 +1761,7 @@ function handleSearch(event) {
     }
 }
 
-function performSearch() {
-    const searchTerm = document.getElementById('searchInput').value;
-    searchProducts(searchTerm);
-}
-function getProductIdByName(productName) {
-    const productMap = {
-        'iPhone 17 Pro Max': 1,
-        'MacBook Pro 14': 2,
-        'Sony WH-1000XM5': 3,
-        'Apple Watch Series 9': 4,
-        'Nike Air Max 270': 5,
-        'Canon EOS R6': 6,
-        'The Legend Book': 7
-    };
-    return productMap[productName] || 1;
-}
+
 // add to cart function backend
 window.addToCart = async function(productName, price, imageUrl) {
     try {
@@ -1832,7 +1846,7 @@ window.addToCart = async function(productName, price, imageUrl) {
             return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
         };
 
-//intasend_config
+
 const INTASEND_CONFIG = {
     publicKey: 'ISPubKey_test_f8ae9370-dee6-42f8-a090-f7e4fbf6c383', 
     baseURL: 'https://api.intasend.com/api/v1',
@@ -2261,7 +2275,7 @@ function showPaymentSuccess(paymentResult) {
     
     document.body.insertAdjacentHTML('beforeend', successHTML);
 }
-
+  //succes and oop
 function showPaymentError(message) {
  
     const verificationModal = document.querySelector('.payment-verification-modal');
@@ -2367,7 +2381,7 @@ async function sendOrderConfirmation(paymentResult, orderDetails) {
 
 
 document.addEventListener('DOMContentLoaded', function() {
-   //check for payment
+   
     handlePaymentReturn();
 });
 
@@ -2384,7 +2398,7 @@ async function loadCartFromBackend() {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        8
+        
         const result = await response.json();
         console.log('Cart API response:', result);
         
@@ -2534,18 +2548,11 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="footer-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; margin-bottom: 50px;">
              <!--Shop function-->
             <div class="footer-section">
-                <h3>Shop</h3>
-                <ul class="footer-links">
-                    <li><a href="#electronics">Electronics</a></li>
-                    <li><a href="#fashion">Fashion</a></li>
-                    <li><a href="#home">Home & Garden</a></li>
-                    <li><a href="#sports">Sports</a></li>
-                    <li><a href="#gaming">Gaming</a></li>
-                    <li><a href="#books">Books</a></li>
-                    
-                </ul>
-            </div>
-
+    <h3>Shop</h3>
+    <ul class="footer-links" id="footerCategories">
+        <!-- Categories will load from database -->
+    </ul>
+</div>
             <!-- Help Section -->
             <div class="footer-section">
                 <h3>Help</h3>
@@ -2607,16 +2614,10 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="copyright">
                 © 2025 Birgenshop, Inc. All Rights Reserved
             </div>
-            <div class="footer-bottom-links">
-                <a href="#terms">Terms of Service</a>
-                <a href="#privacy">Privacy Policy</a>
-                <a href="#cookies">Cookie Policy</a>
-               
-            </div>
+            
         </div>
     </div>
 </footer>
 
 </body>
 </html>
-     

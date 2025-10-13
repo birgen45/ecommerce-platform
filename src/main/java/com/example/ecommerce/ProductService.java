@@ -106,8 +106,7 @@ public class ProductService {
         dto.setImageUrl(product.getImageUrl());
         dto.setStockQuantity(product.getStockQuantity());
         dto.setIsActive(product.getIsActive());
-        dto.setRating(product.getRating());
-        dto.setRatingCount(product.getRatingCount());
+        
         dto.setCreatedAt(product.getCreatedAt());
         dto.setUpdatedAt(product.getUpdatedAt());
         return dto;
@@ -123,8 +122,7 @@ public class ProductService {
         product.setImageUrl(dto.getImageUrl());
         product.setStockQuantity(dto.getStockQuantity());
         product.setIsActive(dto.getIsActive() != null ? dto.getIsActive(): true);
-        product.setRating(dto.getRating());
-        product.setRatingCount(dto.getRatingCount());
+       
         return product;
     }
     
@@ -140,8 +138,7 @@ public class ProductService {
         if (dto.getIsActive() != null) {
             product.setIsActive(dto.getIsActive());
         }
-        product.setRating(dto.getRating());
-        product.setRatingCount(dto.getRatingCount());
+        
     }
 }
 
@@ -376,7 +373,7 @@ class CategoryService {
         dto.setId(category.getId());
         dto.setName(category.getName());
         dto.setDescription(category.getDescription());
-        dto.setIconEmoji(category.getIconEmoji());
+        
         dto.setIsActive(category.getIsActive());
         dto.setCreatedAt(category.getCreatedAt());
         return dto;
@@ -386,7 +383,7 @@ class CategoryService {
         Category category = new Category();
         category.setName(dto.getName());
         category.setDescription(dto.getDescription());
-        category.setIconEmoji(dto.getIconEmoji());
+       
         category.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         return category;
     }
@@ -394,7 +391,7 @@ class CategoryService {
     private void updateCategoryFields(Category category, CategoryDTO dto) {
         category.setName(dto.getName());
         category.setDescription(dto.getDescription());
-        category.setIconEmoji(dto.getIconEmoji());
+       
         if (dto.getIsActive() != null) {
             category.setIsActive(dto.getIsActive());
         }
