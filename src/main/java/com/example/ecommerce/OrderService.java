@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -24,7 +25,11 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductsRepository productsRepository;
-    private final CartService  CartService;
+    private final CartService cartService;
+    
+    // ADD THESE TWO:
+    private final CustomerRepository customerRepository;
+    private final CustomerService customerService;
     
     @Value("${intasend.api.key}")
     private String intasendApiKey;
@@ -34,79 +39,87 @@ public class OrderService {
     
     private final RestTemplate restTemplate = new RestTemplate();
     
-    /***
-     Creates IntaSend checkout session
+    /**
+     * Creates IntaSend checkout session
      */
-   @Transactional
-public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
-    try {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("X-IntaSend-Public-API-Key", intasendApiKey);
-        
-        // Build IntaSend payload with exact field names they expect
-        Map<String, Object> intasendPayload = new HashMap<>();
-        intasendPayload.put("first_name", request.getFirst_name());
-        intasendPayload.put("last_name", request.getLast_name());
-        intasendPayload.put("email", request.getEmail());
-        intasendPayload.put("phone_number", request.getPhone_number());
-        intasendPayload.put("amount", request.getAmount());
-        intasendPayload.put("currency", request.getCurrency());
-        intasendPayload.put("api_ref", request.getApi_ref());
-         intasendPayload.put("redirect_url", request.getRedirect_url());
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(intasendPayload, headers);
-        
-        log.info("Sending to IntaSend API: {}", intasendPayload);
-        
-        // Call IntaSend API - they return a Map
-        ResponseEntity<Map> response = restTemplate.exchange(
-            intasendApiUrl + "/checkout/",
-            HttpMethod.POST,
-            entity,
-            Map.class
-        );
-        
-        Map<String, Object> responseBody = response.getBody();
-        log.info("IntaSend response: {}", responseBody);
-        
-        // Map IntaSend response to your CheckoutResponse object
-        CheckoutResponse checkoutResponse = new CheckoutResponse();
-        checkoutResponse.setId((String) responseBody.get("id"));
-        checkoutResponse.setCheckoutUrl((String) responseBody.get("url")); // IntaSend returns "url"
-        checkoutResponse.setApiRef((String) responseBody.get("api_ref"));
-        checkoutResponse.setState((String) responseBody.get("state"));
-        
-        log.info("Checkout created successfully: {}", checkoutResponse.getId());
-        return checkoutResponse;
-        
-    } catch (Exception e) {
-        log.error("IntaSend API error: {}", e.getMessage(), e);
-        throw new RuntimeException("Failed to create checkout session: " + e.getMessage());
+    @Transactional
+    public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-IntaSend-Public-API-Key", intasendApiKey);
+            
+            Map<String, Object> intasendPayload = new HashMap<>();
+            intasendPayload.put("first_name", request.getFirst_name());
+            intasendPayload.put("last_name", request.getLast_name());
+            intasendPayload.put("email", request.getEmail());
+            intasendPayload.put("phone_number", request.getPhone_number());
+            intasendPayload.put("amount", request.getAmount());
+            intasendPayload.put("currency", request.getCurrency());
+            intasendPayload.put("api_ref", request.getApi_ref());
+            intasendPayload.put("redirect_url", request.getRedirect_url());
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(intasendPayload, headers);
+            
+            log.info("Sending to IntaSend API: {}", intasendPayload);
+            
+            ResponseEntity<Map> response = restTemplate.exchange(
+                intasendApiUrl + "/checkout/",
+                HttpMethod.POST,
+                entity,
+                Map.class
+            );
+            
+            Map<String, Object> responseBody = response.getBody();
+            log.info("IntaSend response: {}", responseBody);
+            
+            CheckoutResponse checkoutResponse = new CheckoutResponse();
+            checkoutResponse.setId((String) responseBody.get("id"));
+            checkoutResponse.setCheckoutUrl((String) responseBody.get("url"));
+            checkoutResponse.setApiRef((String) responseBody.get("api_ref"));
+            checkoutResponse.setState((String) responseBody.get("state"));
+            
+            log.info("Checkout created successfully: {}", checkoutResponse.getId());
+            return checkoutResponse;
+            
+        } catch (Exception e) {
+            log.error("IntaSend API error: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create checkout session: " + e.getMessage());
+        }
     }
-}
+    
     @Transactional
     public OrderDTO saveOrder(OrderConfirmationRequest request) {
         try {
+            // UPDATED: Find or create customer first
+            Customer customer = customerService.findOrCreateCustomer(
+                request.getCustomerInfo().getFirstName(),
+                request.getCustomerInfo().getLastName(),
+                request.getCustomerEmail(),
+                request.getCustomerPhone()
+            );
+            log.info("Customer info collected: {}", customer);
+            
             // Create order entity
             Order order = new Order();
             order.setApiRef(request.getApiRef());
             order.setIntasendCheckoutId(request.getIntasendCheckoutId());
             order.setIntasendTrackingId(request.getIntasendTrackingId());
-            order.setCustomerFirstName(request.getCustomerInfo().getFirstName());
-            order.setCustomerLastName(request.getCustomerInfo().getLastName());
-            order.setCustomerEmail(request.getCustomerEmail());
-            order.setCustomerPhone(request.getCustomerPhone());
+            
+            // CHANGED: Set customer object instead of individual fields
+            order.setCustomer(customer);
+            
             order.setTotalAmount(BigDecimal.valueOf(request.getAmount()));
             order.setCurrency(request.getCurrency());
             order.setPaymentStatus(request.getPaymentStatus());
             
             Order savedOrder = orderRepository.save(order);
-            log.info("Created order: {} for customer: {}", savedOrder.getId(), savedOrder.getCustomerEmail());
+            log.info("Created order: {} for customer: {}", savedOrder.getId(), customer.getCustomerEmail());
             
             // Save order items
             List<OrderItem> orderItems = new ArrayList<>();
             for (OrderConfirmationRequest.CartItemData item : request.getItems()) {
-           Products product = productsRepository.findById(item.getId())
+                Products product = productsRepository.findById(item.getId())
                     .orElseThrow(() -> new RuntimeException("Product not found with id: " + item.getId()));
 
                 OrderItem orderItem = new OrderItem();
@@ -134,13 +147,13 @@ public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
     }
     
     /**
-     *  product stock after order
+     * Update product stock after order
      */
     private void updateProductStock(List<OrderConfirmationRequest.CartItemData> items) {
         for (OrderConfirmationRequest.CartItemData item : items) {
-             productsRepository.findById(item.getId()).ifPresent(product -> {
-            int newStock = product.getStockQuantity() - item.getQuantity();
-            product.setStockQuantity(Math.max(0, newStock));
+            productsRepository.findById(item.getId()).ifPresent(product -> {
+                int newStock = product.getStockQuantity() - item.getQuantity();
+                product.setStockQuantity(Math.max(0, newStock));
                 
                 if (newStock <= 0) {
                     product.setStockStatus("Out of Stock");
@@ -177,20 +190,22 @@ public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
     }
     
     /**
-     * Get orders by customer email
-     */
-    public List<OrderDTO> getOrdersByCustomerEmail(String email) {
-        List<Order> orders = orderRepository.findByCustomerEmailOrderByCreatedAtDesc(email);
-        return orders.stream()
-                .map(order -> {
-                    List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
-                    return convertToDTO(order, items);
-                })
-                .collect(Collectors.toList());
-    }
+ * Get orders by customer email
+ */
+public List<OrderDTO> getOrdersByCustomerEmail(String email) {
+    // Directly search by email using the customer relationship
+    List<Order> orders = orderRepository.findByCustomer_CustomerEmailOrderByCreatedAtDesc(email);
+    
+    return orders.stream()
+            .map(order -> {
+                List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+                return convertToDTO(order, items);
+            })
+            .collect(Collectors.toList());
+}
     
     /**
-     * Updated order payment status
+     * Update order payment status
      */
     @Transactional
     public OrderDTO updatePaymentStatus(Long orderId, String status) {
@@ -206,39 +221,40 @@ public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
         return convertToDTO(updated, items);
     }
    
-     /**
- * Updated order status after payment confirmation
- */
-@Transactional
-public OrderDTO updateOrderStatus(
-        String apiRef, 
-        String intasendCheckoutId,
-        String intasendTrackingId,
-        String paymentStatus) {
-    
-    log.info("Searching for order with api_ref: {}", apiRef);
-    
-    Order order = orderRepository.findByApiRef(apiRef)
-        .orElseThrow(() -> new RuntimeException("Order not found with api_ref: " + apiRef));
-    
-    log.info("Found order ID: {}, updating status from {} to {}...", 
-        order.getId(), order.getPaymentStatus(), paymentStatus);
-    
-    order.setIntasendCheckoutId(intasendCheckoutId);
-    order.setIntasendTrackingId(intasendTrackingId);
-    order.setPaymentStatus(paymentStatus);
-    order.setUpdatedAt(java.time.LocalDateTime.now());
-    
-    Order savedOrder = orderRepository.save(order);
-    log.info("Order {} updated successfully to status: {}", savedOrder.getId(), paymentStatus);
-    
-    List<OrderItem> items = orderItemRepository.findByOrderId(savedOrder.getId());
-    
-    return convertToDTO(savedOrder, items);
-}
+    /**
+     * Update order status after payment confirmation
+     */
+    @Transactional
+    public OrderDTO updateOrderStatus(
+            String apiRef, 
+            String intasendCheckoutId,
+            String intasendTrackingId,
+            String paymentStatus) {
+        
+        log.info("Searching for order with api_ref: {}", apiRef);
+        
+        Order order = orderRepository.findByApiRef(apiRef)
+            .orElseThrow(() -> new RuntimeException("Order not found with api_ref: " + apiRef));
+        
+        log.info("Found order ID: {}, updating status from {} to {}...", 
+            order.getId(), order.getPaymentStatus(), paymentStatus);
+        
+        order.setIntasendCheckoutId(intasendCheckoutId);
+        order.setIntasendTrackingId(intasendTrackingId);
+        order.setPaymentStatus(paymentStatus);
+        order.setUpdatedAt(java.time.LocalDateTime.now());
+        
+        Order savedOrder = orderRepository.save(order);
+        log.info("Order {} updated successfully to status: {}", savedOrder.getId(), paymentStatus);
+        
+        List<OrderItem> items = orderItemRepository.findByOrderId(savedOrder.getId());
+        
+        return convertToDTO(savedOrder, items);
+    }
     
     /**
      * Convert Order entity to DTO
+     * UPDATED: Now gets customer info from customer relationship
      */
     private OrderDTO convertToDTO(Order order, List<OrderItem> items) {
         OrderDTO dto = new OrderDTO();
@@ -249,10 +265,15 @@ public OrderDTO updateOrderStatus(
         dto.setTotalAmount(order.getTotalAmount());
         dto.setCurrency(order.getCurrency());
         dto.setPaymentStatus(order.getPaymentStatus());
-        dto.setCustomerEmail(order.getCustomerEmail());
-        dto.setCustomerPhone(order.getCustomerPhone());
-        dto.setCustomerFirstName(order.getCustomerFirstName());
-        dto.setCustomerLastName(order.getCustomerLastName());
+        
+        // ADDED: Get customer information from the customer relationship
+        if (order.getCustomer() != null) {
+            dto.setCustomerFirstName(order.getCustomer().getCustomerFirstName());
+            dto.setCustomerLastName(order.getCustomer().getCustomerLastName());
+            dto.setCustomerEmail(order.getCustomer().getCustomerEmail());
+            dto.setCustomerPhone(order.getCustomer().getCustomerPhone());
+        }
+        
         dto.setCreatedAt(order.getCreatedAt());
         dto.setUpdatedAt(order.getUpdatedAt());
         
@@ -279,5 +300,4 @@ public OrderDTO updateOrderStatus(
         dto.setCreatedAt(item.getCreatedAt());
         return dto;
     }
-
 }

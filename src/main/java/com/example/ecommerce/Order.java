@@ -30,17 +30,9 @@ public class Order {
     @Column(name = "intasend_tracking_id")
     private String intasendTrackingId;
     
-    @Column(name = "customer_first_name", nullable = false)
-    private String customerFirstName;
-    
-    @Column(name = "customer_last_name", nullable = false)
-    private String customerLastName;
-    
-    @Column(name = "customer_email", nullable = false)
-    private String customerEmail;
-    
-    @Column(name = "customer_phone", nullable = false)
-    private String customerPhone;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
     
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
