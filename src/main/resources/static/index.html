@@ -1245,7 +1245,7 @@
             </div>
         </div>
     </header>
-
+  
     <nav class="nav-menu">
     <div class="nav-container">
 
@@ -1279,7 +1279,7 @@
 </section>
 
     </main>
-<div class="cart-dropdown" id="cartDropdown">
+        <div class="cart-dropdown" id="cartDropdown">
         <div class="cart-header">
             <h3>Shopping Cart</h3>
             <button class="close-cart" onclick="closeCart()">×</button>
@@ -1392,7 +1392,7 @@ async function loadProductsFromDatabase() {
     
     navList.innerHTML = categories.map(cat => `
         <li class="nav-item">
-            <a href="#" class="nav-link" onclick="event.preventDefault(); filterByCategory('${cat.name}');">${cat.name}</a>
+            <a href="#" class="nav-link" onclick="event.preventDefault(); filterByCategory(${cat.id}, '${cat.name}');">${cat.name}</a>
         </li>
     `).join('') + `
         <li class="nav-item">
@@ -1409,25 +1409,25 @@ function populateCategoryCards(categories) {
         return;
     } 
     categoriesGrid.innerHTML = categories.map(cat => `
-        <div class="category-card" onclick="filterByCategory('${cat.name}')">
+        <div class="category-card" onclick="filterByCategory(${cat.id}, '${cat.name}')">
             <div class="category-name" style="margin-top: 0;">${cat.name}</div>
          </div>
     `).join('');
     console.log(' Category cards populated');
 }
 
-// 3. Populate Footer
+// Footer
 function populateFooterCategories(categories) {
     const footerCategories = document.getElementById('footerCategories');
     if (!footerCategories) {
-        console.error('❌ footerCategories element not found!');
+        console.error('footerCategories element not found!');
         return;
     }
     
     footerCategories.innerHTML = categories.map(cat => `
-        <li><a href="#" onclick="event.preventDefault(); filterByCategory('${cat.name}'); window.scrollTo({top:0,behavior:'smooth'});">${cat.name}</a></li>
+        <li><a href="#" onclick="event.preventDefault(); filterByCategory(${cat.id}, '${cat.name}'); window.scrollTo({top:0,behavior:'smooth'});">${cat.name}</a></li>
     `).join('');
-    console.log('✅ Footer categories populated');
+    console.log(' Footer categories populated');
 }
 
 //  Display products dynamically
@@ -1463,10 +1463,9 @@ function displayProducts(products) {
     initializeProducts();
 }
 
-// Helper: Generate star ratings
 
 
-// Helper: Show error message
+//  Show error message
 function showErrorMessage(message) {
     const productsGrid = document.querySelector('.products-grid');
     productsGrid.innerHTML = `
@@ -1479,7 +1478,7 @@ function showErrorMessage(message) {
     `;
 }
 
-//  Initialize products array from DOM
+//  Initialized products array from DOM
 function initializeProducts() {
     const productCards = document.querySelectorAll('.product-card');
     allProducts = Array.from(productCards).map(card => {
@@ -1506,109 +1505,161 @@ function getProductIdByName(productName) {
     return 1;
 }
 
-// Category filtering (existing function - no changes needed)
-function filterByCategory(category) {
-    currentCategory = category;
-    
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    let visibleCount = 0;
-    allProducts.forEach(product => {
-        if (product.category === category) {
-            product.element.style.display = 'block';
-            product.element.classList.remove('hidden');
-            visibleCount++;
-        } else {
-            product.element.style.display = 'none';
-            product.element.classList.add('hidden');
+// Category filtering 
+async function filterByCategory(categoryId, categoryName) {
+    try {
+        currentCategory = categoryId;
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        if (event && event.target) {
+            event.target.classList.add('active');
         }
-    });
-    
-    const sectionTitle = document.querySelector('.products-section .section-title');
-    sectionTitle.textContent = `${category} Products`;
-    
-    showNoProductsMessage(visibleCount, category);
-}
-
-function showAllProducts() {
-    currentCategory = 'all';
-    
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    
-    allProducts.forEach(product => {
-        product.element.style.display = 'block';
-        product.element.classList.remove('hidden');
-    });
-    
-    const sectionTitle = document.querySelector('.products-section .section-title');
-    sectionTitle.textContent = 'Featured Products';
-    
-    removeNoProductsMessage();
-}
-
-function showNoProductsMessage(count, category) {
-    removeNoProductsMessage();
-    if (count === 0) {
-        const productsGrid = document.querySelector('.products-grid');
-        const noProductsDiv = document.createElement('div');
-        noProductsDiv.className = 'no-products';
-        noProductsDiv.innerHTML = `
-            <p>No products found in ${category} category.</p>
-            <button onclick="showAllProducts()" class="cta-button">View All Products</button>
-        `;
-        productsGrid.appendChild(noProductsDiv);
-    }
-}
-
-function removeNoProductsMessage() {
-    const existingMessage = document.querySelector('.no-products');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
-}
-
-function searchProducts(searchTerm) {
-    if (!searchTerm) {
-        showAllProducts();
-        return;
-    }
-    
-    let visibleCount = 0;
-    allProducts.forEach(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = currentCategory === 'all' || product.category === currentCategory;
         
-        if (matchesSearch && matchesCategory) {
-            product.element.style.display = 'block';
-            product.element.classList.remove('hidden');
-            visibleCount++;
-        } else {
-            product.element.style.display = 'none';
-            product.element.classList.add('hidden');
+        // Show loading state
+        const productsGrid = document.querySelector('.products-grid');
+        productsGrid.innerHTML = '<p class="no-products">Loading products...</p>';
+        
+        // Fetch filtered products using category ID
+        console.log(`Fetching products for category ID: ${categoryId}`);
+        const response = await fetch(`http://localhost:8080/api/products?categoryId=${categoryId}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    });
-    
-    const sectionTitle = document.querySelector('.products-section .section-title');
-    sectionTitle.textContent = `Search Results for "${searchTerm}"`;
-    
-    showNoProductsMessage(visibleCount, `search "${searchTerm}"`);
-}
-
-function handleSearch(event) {
-    if (event.key === 'Enter') {
-        performSearch();
+        
+        const result = await response.json();
+        console.log('Filtered products response:', result);
+        
+        if (result.success && result.data) {
+            displayProducts(result.data);
+            
+            const sectionTitle = document.querySelector('.products-section .section-title');
+            sectionTitle.textContent = `${categoryName} Products (${result.data.length})`;
+            
+            if (result.data.length === 0) {
+                productsGrid.innerHTML = `
+                    <div class="no-products">
+                        <p>No products found in ${categoryName} category.</p>
+                        <button onclick="showAllProducts()" class="cta-button">View All Products</button>
+                    </div>
+                `;
+            }
+        } else {
+            throw new Error('Failed to load filtered products');
+        }
+        
+    } catch (error) {
+        console.error('Error filtering products:', error);
+        showErrorMessage('Failed to load products for this category');
     }
 }
 
-function performSearch() {
+// Modified showAllProducts function
+async function showAllProducts() {
+    try {
+        currentCategory = 'all';
+        
+        
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        const allProductsLink = document.querySelector('.nav-link:last-child');
+        if (allProductsLink) {
+            allProductsLink.classList.add('active');
+        }
+        
+        const productsGrid = document.querySelector('.products-grid');
+        productsGrid.innerHTML = '<p class="no-products">Loading products...</p>';
+        
+        console.log('Fetching all products');
+        const response = await fetch('http://localhost:8080/api/products');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            displayProducts(result.data);
+            const sectionTitle = document.querySelector('.products-section .section-title');
+            sectionTitle.textContent = 'Featured Products';
+        }
+        
+    } catch (error) {
+        console.error('Error loading all products:', error);
+        showErrorMessage('Failed to load products');
+    }
+}
+
+//   uses query parameters
+async function searchProducts(searchTerm) {
+    try {
+        if (!searchTerm || searchTerm.trim() === '') {
+            showAllProducts();
+            return;
+        }
+        
+        const productsGrid = document.querySelector('.products-grid');
+        productsGrid.innerHTML = '<p class="no-products">Searching...</p>';
+        
+        console.log(`Searching for: ${searchTerm}`);
+        
+        //  URL with query parameters
+        let url = `http://localhost:8080/api/products?search=${encodeURIComponent(searchTerm)}`;
+        
+        
+        if (currentCategory !== 'all') {
+            url += `&categoryId=${currentCategory}`;
+        }
+        
+        console.log('Search URL:', url);
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Search results:', result);
+        
+        if (result.success && result.data) {
+            displayProducts(result.data);
+            
+            const sectionTitle = document.querySelector('.products-section .section-title');
+            sectionTitle.textContent = `Search Results for "${searchTerm}" (${result.data.length})`;
+            
+            if (result.data.length === 0) {
+                productsGrid.innerHTML = `
+                    <div class="no-products">
+                        <p>No products found for "${searchTerm}".</p>
+                        <button onclick="showAllProducts(); document.getElementById('searchInput').value=''" class="cta-button">Clear Search</button>
+                    </div>
+                `;
+            }
+        } else {
+            throw new Error('Search failed');
+        }
+        
+    } catch (error) {
+        console.error('Error searching products:', error);
+        showErrorMessage('Search failed. Please try again.');
+    }
+}
+
+// performSearch 
+async function performSearch() {
     const searchTerm = document.getElementById('searchInput').value;
-    searchProducts(searchTerm);
+    await searchProducts(searchTerm);
+}
+
+
+async function handleSearch(event) {
+    if (event.key === 'Enter') {
+        await performSearch();
+    }
 }
 
 
@@ -1737,10 +1788,7 @@ function updateCartView() {
             </div>
         </div>
     `).join('');
-    
     cartItemsContainer.innerHTML = cartHTML;
-    
-    // Calculate total
     const total = cartItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
     cartTotalElement.textContent = total.toLocaleString();
     
@@ -2154,7 +2202,7 @@ async function handlePaymentReturn() {
             
             console.log('Pending order found:', pendingOrder);
             
-            // UPDATE the existing order status 
+            // UPDATEs the existing order status 
             const updateData = {
                 apiRef: pendingOrder.api_ref,
                 intasendCheckoutId: checkout_id,

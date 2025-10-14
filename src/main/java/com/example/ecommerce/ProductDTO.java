@@ -219,3 +219,12 @@ class OrderItemDTO {
     private BigDecimal subtotal;
     private LocalDateTime createdAt;  
 }
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+class UpdateOrderStatusRequest {
+    private String apiRef;
+    private String intasendCheckoutId;
+    private String intasendTrackingId;
+    private String paymentStatus;
+}

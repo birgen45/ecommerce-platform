@@ -36,6 +36,9 @@ public class Products {
     @Column(name = "old_price", precision = 10, scale = 2)
     private BigDecimal oldPrice;
     
+    @Column(name = "category_id")
+    private Long categoryId;
+    
     @Column(nullable = false)
     @NotBlank(message = "Category is required")
     private String category;

@@ -27,8 +27,24 @@ public interface ProductsRepository extends JpaRepository<Products, Long> {
     
     @Query("SELECT DISTINCT p.category FROM Products p WHERE p.isActive = true")
     List<String> findAllActiveCategories();
-}
 
+/**
+     * Find products by category ID and active status
+     */
+    List<Products> findByCategoryIdAndIsActiveTrue(Long categoryId);
+    
+    /**
+     * Search products within a specific category (by ID)
+     */
+    @Query("SELECT p FROM Products p WHERE " +
+           "p.categoryId = :categoryId AND " +
+           "(LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(p.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+           "AND p.isActive = true")
+    List<Products> searchProductsInCategory(
+            @Param("searchTerm") String searchTerm, 
+            @Param("categoryId") Long categoryId);
+}
 
 @Repository
 interface CartRepository extends JpaRepository<Cart, Long> {

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;//loging messages and errors
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;//used to build http response allowing one to set OK 200
 import org.springframework.web.bind.annotation.*;//brings all core annota,,,, for creating rest controllers below
 
@@ -22,22 +23,47 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Slf4j
 @CrossOrigin(origins = "*", allowedHeaders = "*") //allow request from any domain
 public class ProductController {
-    
+
     private final ProductService productService;
     
     // GET /api/products  Returns all products for frontend grid
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductDTO>>> getAllProducts() {
-          //return wrapper containing list of products 
+   @GetMapping
+    public ResponseEntity<ApiResponse<List<ProductDTO>>> getProducts(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String search) {
+        
         try {
-            List<ProductDTO> products = productService.getAllActiveProducts();
-            return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully", products));
+            log.info("GET /api/products - categoryId: {}, search: {}", categoryId, search);
+            
+            List<ProductDTO> products;
+            
+            // Apply filters based on query parameters
+            if (categoryId != null && search != null) {
+                products = productService.searchProductsInCategory(search, categoryId);
+            } 
+            else if (categoryId != null) {
+                products = productService.getProductsByCategoryId(categoryId);
+            } 
+            else if (search != null) {
+                products = productService.searchProducts(search);
+            } 
+            else {
+                products = productService.getAllActiveProducts();
+            }
+            
+            log.info("Found {} products", products.size());
+            
+            return ResponseEntity.ok(
+    ApiResponse.success("Products retrieved successfully", products)
+);
+            
         } catch (Exception e) {
             log.error("Error retrieving products", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to retrieve products"));
-        } 
+    .body(ApiResponse.error("Error: " + e.getMessage()));
+        }
     }
+
     
     // GET /api/products/featured  For available Products section
     @GetMapping("/featured")

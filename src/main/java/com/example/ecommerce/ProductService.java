@@ -16,6 +16,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 // Product Service  This is the ONLY public class in this file
+//handles all business logic related to products, acting as the intermediary between the controller/client and the ProductsRepository (database)
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -37,9 +38,22 @@ public class ProductService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
-    
+    public List<ProductDTO> getProductsByCategoryId(Long categoryId) {
+        log.info("Fetching products for category ID: {}", categoryId);
+        return productsRepository.findByCategoryIdAndIsActiveTrue(categoryId)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
     public List<ProductDTO> searchProducts(String searchTerm) {
         return productsRepository.searchProducts(searchTerm)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    public List<ProductDTO> searchProductsInCategory(String searchTerm, Long categoryId) {
+        log.info("Searching for '{}' in category ID: {}", searchTerm, categoryId);
+        return productsRepository.searchProductsInCategory(searchTerm, categoryId)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -62,7 +76,7 @@ public class ProductService {
     public List<String> getAllCategories() {
         return productsRepository.findAllActiveCategories();
     }
-    
+    //write
     @Transactional
     public ProductDTO createProduct(ProductDTO productDTO) {
         Products product = convertToEntity(productDTO);
@@ -153,7 +167,8 @@ class CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductsRepository productsRepository;
     private final ProductService productService;
-    
+
+    // it defines the scope of a single database transaction , ensures the acid properyt of database
     @Transactional
     public CartDTO addToCart(AddToCartRequest request) {
         Products product = productsRepository.findById(request.getProductId())

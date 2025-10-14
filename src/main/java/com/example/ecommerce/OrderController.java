@@ -1,6 +1,7 @@
 package com.example.ecommerce;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -148,5 +149,40 @@ public ResponseEntity<?> createPendingOrder(@RequestBody OrderConfirmationReques
         return ResponseEntity.badRequest().body(errorResponse);
        }
      }
-    
+    @PutMapping("/update-status")
+    public ResponseEntity<?> updateOrderStatus(@RequestBody UpdateOrderStatusRequest request) {
+        try {
+            log.info("=== UPDATE ORDER STATUS REQUEST ===");
+            log.info("API Ref: {}", request.getApiRef());
+            log.info("IntaSend Checkout ID: {}", request.getIntasendCheckoutId());
+            log.info("IntaSend Tracking ID: {}", request.getIntasendTrackingId());
+            log.info("Payment Status: {}", request.getPaymentStatus());
+            
+            OrderDTO updatedOrder = orderService.updateOrderStatus(
+                request.getApiRef(),
+                request.getIntasendCheckoutId(),
+                request.getIntasendTrackingId(),
+                request.getPaymentStatus()
+            );
+            
+            log.info("Order updated successfully with ID: {}", updatedOrder.getId());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", updatedOrder);
+            response.put("message", "Order status updated successfully");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error updating order status: {}", e.getMessage(), e);
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to update order: " + e.getMessage());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(errorResponse);
+        }
+    }
 }

@@ -122,7 +122,7 @@ public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
             
             log.info("Saved {} order items for order: {}", orderItems.size(), savedOrder.getId());
             
-            // Update product stock quantities
+            // Updates product stock quantities
             updateProductStock(request.getItems());
             
             return convertToDTO(savedOrder, orderItems);
@@ -134,7 +134,7 @@ public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
     }
     
     /**
-     * Updates product stock after order
+     *  product stock after order
      */
     private void updateProductStock(List<OrderConfirmationRequest.CartItemData> items) {
         for (OrderConfirmationRequest.CartItemData item : items) {
@@ -190,7 +190,7 @@ public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
     }
     
     /**
-     * Update order payment status
+     * Updated order payment status
      */
     @Transactional
     public OrderDTO updatePaymentStatus(Long orderId, String status) {
@@ -205,6 +205,37 @@ public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
         
         return convertToDTO(updated, items);
     }
+   
+     /**
+ * Updated order status after payment confirmation
+ */
+@Transactional
+public OrderDTO updateOrderStatus(
+        String apiRef, 
+        String intasendCheckoutId,
+        String intasendTrackingId,
+        String paymentStatus) {
+    
+    log.info("Searching for order with api_ref: {}", apiRef);
+    
+    Order order = orderRepository.findByApiRef(apiRef)
+        .orElseThrow(() -> new RuntimeException("Order not found with api_ref: " + apiRef));
+    
+    log.info("Found order ID: {}, updating status from {} to {}...", 
+        order.getId(), order.getPaymentStatus(), paymentStatus);
+    
+    order.setIntasendCheckoutId(intasendCheckoutId);
+    order.setIntasendTrackingId(intasendTrackingId);
+    order.setPaymentStatus(paymentStatus);
+    order.setUpdatedAt(java.time.LocalDateTime.now());
+    
+    Order savedOrder = orderRepository.save(order);
+    log.info("Order {} updated successfully to status: {}", savedOrder.getId(), paymentStatus);
+    
+    List<OrderItem> items = orderItemRepository.findByOrderId(savedOrder.getId());
+    
+    return convertToDTO(savedOrder, items);
+}
     
     /**
      * Convert Order entity to DTO
@@ -248,4 +279,5 @@ public CheckoutResponse createIntaSendCheckout(CheckoutRequest request) {
         dto.setCreatedAt(item.getCreatedAt());
         return dto;
     }
+
 }
