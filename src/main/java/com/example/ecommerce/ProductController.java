@@ -1,18 +1,15 @@
 package com.example.ecommerce;
 
-import java.util.HashMap;
 
 import jakarta.validation.Valid;//Validating objects passed in the request body
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;//loging messages and errors
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;//used to build http response allowing one to set OK 200
 import org.springframework.web.bind.annotation.*;//brings all core annota,,,, for creating rest controllers below
 
 import java.util.List;
-import java.util.Map;
+
 
 
 
